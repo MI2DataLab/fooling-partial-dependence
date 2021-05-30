@@ -1,6 +1,6 @@
 # ---------------------------------
 # example: heart / NN / variable
-# > python heart-genetic.py
+# > python heart-gradient.py
 # ---------------------------------
 
 
