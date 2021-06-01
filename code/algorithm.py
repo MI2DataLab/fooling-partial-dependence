@@ -54,6 +54,7 @@ class Algorithm:
             if not isinstance(grid, np.ndarray):
                 raise TypeError('`grid` needs to be a np.ndarray')
             self.result_explanation['grid'] = grid
+            self._n_grid_points = len(grid)
 
         self.result_explanation['original'] = self.explainer.pd(
             X=self._X,
