@@ -9,6 +9,7 @@ import argparse
 parser = argparse.ArgumentParser(description='main')
 parser.add_argument('--variable', default="age", type=str, help='variable')
 parser.add_argument('--strategy', default="target", type=str, help='strategy type')
+parser.add_argument('--iter', default=50, type=int, help='max iterations')
 parser.add_argument('--seed', default=0, type=int, help='random seed')
 args = parser.parse_args()
 VARIABLE = args.variable
@@ -20,7 +21,6 @@ import code
 import numpy as np
 np.random.seed(args.seed)
 import pandas as pd
-from sklearn.model_selection import train_test_split
 
 df = pd.read_csv("data/heart.csv")
 X, y = df.drop("target", axis=1), df.target.values
@@ -56,9 +56,9 @@ alg = code.GradientAlgorithm(
 )
 
 if args.strategy == "target":
-    alg.fool_aim(random_state=args.seed)
+    alg.fool_aim(max_iter=args.iter, random_state=args.seed)
 else:
-    alg.fool(random_state=args.seed)
+    alg.fool(max_iter=args.iter, random_state=args.seed)
 
 alg.plot_losses()
 alg.plot_explanation()
