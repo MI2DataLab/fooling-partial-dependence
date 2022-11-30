@@ -184,7 +184,7 @@ class Algorithm:
                                     fontsize=14, loc=legend_loc)
             for i, _ in enumerate(leg.get_lines()):
                 leg.get_lines()[i].set_linewidth(lw)
-            plt.title(explanation_name, fontsize=20)
+            plt.title(explanation_name.upper(), fontsize=20)
             plt.xlabel('variable: ' + self._variable, fontsize=16)
             plt.ylabel('prediction', fontsize=16)
             if savefig:
@@ -221,7 +221,7 @@ class Algorithm:
                 color='#000000', 
                 lw=lw
             )
-            plt.title('Learning curve - ' + explanation_name, fontsize=20)
+            plt.title('Learning curve - ' + explanation_name.upper(), fontsize=20)
             plt.xlabel('epoch', fontsize=16)
             plt.ylabel('loss', fontsize=16)
             if savefig:
