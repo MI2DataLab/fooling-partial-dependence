@@ -65,7 +65,7 @@ class GradientAlgorithm(algorithm.Algorithm):
         # init algorithm
         self._initialize()
 
-        for explanation_name, result_explanation in zip(self.result_explanations.keys(), self.result_explanations.values()):
+        for j, (explanation_name, result_explanation) in enumerate(zip(self.result_explanations.keys(), self.result_explanations.values())):
             explanation_func = getattr(self.explainer, explanation_name)
 
             result_explanation['changed'] = explanation_func(
@@ -73,9 +73,12 @@ class GradientAlgorithm(algorithm.Algorithm):
                 self._idv, 
                 result_explanation['grid']
             )
-            self.append_losses(result_explanation, i=0)
+            if j > 0:
+                self.append_losses(explanation_name)
+            else:
+                self.append_losses(explanation_name, i=0)
             if save_iter:
-                self.append_explanations(result_explanation, i=0)
+                self.append_explanations(explanation_name, i=0)
 
             pbar = tqdm.tqdm(range(1, max_iter + 1), disable=not verbose)
             for i in pbar:
@@ -91,10 +94,13 @@ class GradientAlgorithm(algorithm.Algorithm):
                 step = self.params['optimizer'].calculate_step(d_loss)
                 self._X_changed -= self.params['learning_rate'] * step
                 
-                self.append_losses(result_explanation, i=i)
+                if j > 0:
+                    self.append_losses(explanation_name)
+                else:
+                    self.append_losses(explanation_name, i=i)
                 if save_iter:
-                    self.append_explanations(result_explanation, i=i)
-                pbar.set_description("Iter: %s || Loss: %s" % (i, self.iter_losses['loss'][-1]))
+                    self.append_explanations(explanation_name, i=i)
+                pbar.set_description("Iter: %s || Loss: %s" % (i, self.iter_losses['loss'][explanation_name][-1]))
                 if utils.check_early_stopping(self.iter_losses, self.params['epsilon'], self.params['stop_iter']):
                     break
 
@@ -186,15 +192,16 @@ class GradientAlgorithm(algorithm.Algorithm):
 
     #:# helper
               
-    def append_losses(self, result_explanation, i=0):
+    def append_losses(self, explanation_name, i=None):
         _loss = loss.loss(
-            original=result_explanation['target'] if self._aim else result_explanation['original'],
-            changed=result_explanation['changed'],
+            original=self.result_explanations[explanation_name]['target'] if self._aim else self.result_explanations[explanation_name]['original'],
+            changed=self.result_explanations[explanation_name]['changed'],
             aim=self._aim,
             center=self._center
         )
-        self.iter_losses['iter'].append(i)
-        self.iter_losses['loss'].append(_loss)
+        if i is not None:
+            self.iter_losses['iter'].append(i)
+        self.iter_losses['loss'][explanation_name].append(_loss)
 
-    def append_explanations(self, result_explanation, i=0):
-        self.iter_explanations[i] = result_explanation['changed']
+    def append_explanations(self, explanation_name, i=0):
+        self.iter_explanations[explanation_name][i] = self.result_explanations[explanation_name]['changed']

@@ -29,14 +29,15 @@ class Algorithm:
         else:
             self._idc = None
 
-        self.result_explanations = {}
+        self.iter_losses = {'iter':[], 'loss':{}}
+
+        self.result_explanations, self.iter_explanations = {}, {}
         for name in explanation_names:
             self.result_explanations[name] = {'grid': None, 'original': None, 'changed': None}
+            self.iter_losses['loss'][name] = []
+            self.iter_explanations[name] = {}
 
         self.result_data = {}
-
-        self.iter_losses = {'iter':[], 'loss':[]}
-        self.iter_explanations = {}
 
 
     def fool(
@@ -212,16 +213,17 @@ class Algorithm:
         plt.show()
 
     def plot_losses(self, lw=3, figsize=(9, 6), savefig=None):
-        plt.rcParams["figure.figsize"] = figsize
-        plt.plot(
-            self.iter_losses['iter'], 
-            self.iter_losses['loss'], 
-            color='#000000', 
-            lw=lw
-        )
-        plt.title('Learning curve', fontsize=20)
-        plt.xlabel('epoch', fontsize=16)
-        plt.ylabel('loss', fontsize=16)
-        if savefig:
-            plt.savefig(savefig)
-        plt.show()
+        for explanation_name in self.iter_losses['loss'].keys():
+            plt.rcParams["figure.figsize"] = figsize
+            plt.plot(
+                self.iter_losses['iter'], 
+                self.iter_losses['loss'][explanation_name], 
+                color='#000000', 
+                lw=lw
+            )
+            plt.title('Learning curve - ' + explanation_name, fontsize=20)
+            plt.xlabel('epoch', fontsize=16)
+            plt.ylabel('loss', fontsize=16)
+            if savefig:
+                plt.savefig(savefig)
+            plt.show()
