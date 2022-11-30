@@ -19,7 +19,7 @@ class GradientAlgorithm(algorithm.Algorithm):
         variable,
         constant=None,
         n_grid_points=21,
-        explanation_names=['pd', 'ale'],
+        learning_rate=1e-2,
         **kwargs
     ):
         super().__init__(
@@ -32,7 +32,7 @@ class GradientAlgorithm(algorithm.Algorithm):
         params = dict(
             epsilon=1e-5,
             stop_iter=10,
-            learning_rate=1e-2,
+            learning_rate=learning_rate,
             optimizer=utils.AdamOptimizer()
         )
         
@@ -40,10 +40,6 @@ class GradientAlgorithm(algorithm.Algorithm):
             params[k] = v
 
         self.params = params
-
-        self.result_explanations = {}
-        for name in explanation_names:
-            self.result_explanations[name] = {'grid': None, 'original': None, 'changed': None}
 
 
     def fool(
