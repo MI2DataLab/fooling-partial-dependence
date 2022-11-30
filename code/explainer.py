@@ -115,3 +115,40 @@ class Explainer:
         y = y_pop_long.mean(axis=1)
 
         return y
+
+    def ale(self, X, idv, grid):
+        """
+        numpy implementation of pd calculation for 1 variable 
+        
+        takes:
+        X - np.ndarray (2d), data
+        idv - int, index of variable to calculate profile
+        
+        returns:
+        y - np.ndarray (1d), vector of pd profile values
+        """
+        
+        grid_points = len(grid)
+        # TODO przypadek większe niż ostatni punkt z grida (osobno?)
+        # X: (liczba obserwacji, liczba featureów)
+
+        # X_sorted = X[X[:, idv].argsort()]
+        local_effects = np.zeros_like(grid)
+
+        for i, (first, second) in enumerate(zip(grid, grid[1:])):
+            # TODO edge case gdzie neighbors jest puste
+            neighbors = X[(X[:, idv] > first) & (X[:, idv] <= second)]
+
+            if neighbors.shape[0] == 0:
+                continue
+
+            neighbors_first = np.copy(neighbors)
+            neighbors_second = np.copy(neighbors)
+            neighbors_first[:, idv] = first
+            neighbors_second[:, idv] = second
+
+            result = (self.predict(neighbors_second) - self.predict(neighbors_first)).mean()
+            local_effects[i] = result   
+
+        y = np.cumsum(local_effects)
+        return y
