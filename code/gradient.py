@@ -6,6 +6,8 @@ from . import algorithm
 from . import loss
 from . import utils
 
+from scipy import stats
+
 try:
     import tensorflow as tf
 except:
@@ -232,3 +234,33 @@ class GradientAlgorithm(algorithm.Algorithm):
         self.iter_explanations[explanation_name][i] = self.result_explanations[
             explanation_name
         ]["changed"]
+
+    
+    def get_metrics(self, save_path=None):
+        output_str = ""
+        for explanation_name in self.result_explanations.keys():
+            _loss = loss.loss(
+            original=self.result_explanations[explanation_name]["target"]
+            if self._aim
+            else self.result_explanations[explanation_name]["original"],
+            changed=self.result_explanations[explanation_name]["changed"],
+            aim=self._aim,
+            center=self._center,
+            )
+
+            output_str += (f"{explanation_name} L2: {_loss}\n")
+
+            spearman_r, _ = stats.spearmanr(self.result_explanations[explanation_name]["original"],
+                        self.result_explanations[explanation_name]["changed"])
+            output_str += (f"{explanation_name} Spearman R: {spearman_r}\n")
+
+        print(output_str)
+        if save_path:
+            with open(save_path, "w") as text_file:
+                text_file.write(output_str)
+
+
+
+
+
+        
