@@ -249,6 +249,9 @@ class GradientAlgorithm(algorithm.Algorithm):
 
             output_str += (f"{explanation_name} L2: {_loss}\n")
 
+            l1 = np.abs(self.result_explanations[explanation_name]["original"] - self.result_explanations[explanation_name]["changed"]).mean()
+            output_str += (f"{explanation_name} L1: {l1}\n")
+
             spearman_r, _ = stats.spearmanr(self.result_explanations[explanation_name]["original"],
                         self.result_explanations[explanation_name]["changed"])
             output_str += (f"{explanation_name} Spearman R: {spearman_r}\n")
