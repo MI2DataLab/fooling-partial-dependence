@@ -37,9 +37,6 @@ y = 10 * np.sin(np.pi * X[:, 0] * X[:, 1]) + 20 * (X[:, 2] - 0.5) ** 2 + 10 * X[
 y = (y > (y.mean())).astype(int)
 X = X[:, :DIM]
 X = pd.DataFrame(X, columns=[f"x{i+1}" for i in range(DIM)])
-print(X.head())
-print(y)
-# assert False
 
 normalizer = tf.keras.layers.experimental.preprocessing.Normalization()
 normalizer.adapt(X)
