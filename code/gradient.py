@@ -240,13 +240,12 @@ class GradientAlgorithm(algorithm.Algorithm):
         output_str = ""
         for explanation_name in self.result_explanations.keys():
             _loss = loss.loss(
-            original=self.result_explanations[explanation_name]["target"]
-            if self._aim
-            else self.result_explanations[explanation_name]["original"],
+            original=self.result_explanations[explanation_name]["original"],
             changed=self.result_explanations[explanation_name]["changed"],
             aim=self._aim,
             center=self._center,
             )
+
 
             output_str += (f"{explanation_name} L2: {_loss}\n")
 
