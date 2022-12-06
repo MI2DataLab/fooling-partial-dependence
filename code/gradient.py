@@ -51,7 +51,6 @@ class GradientAlgorithm(algorithm.Algorithm):
         aim=False,
         center=None
     ):
-
         self._aim = aim
         self._center = not aim if center is None else center
         if aim is False:
@@ -70,18 +69,16 @@ class GradientAlgorithm(algorithm.Algorithm):
 
         pbar = tqdm.tqdm(range(1, max_iter + 1), disable=not verbose)
         for i in pbar:
-            # gradient of output w.r.t input
-            _ = self._calculate_gradient(self._X_changed)
-            d_output_input_long = self._calculate_gradient_long(self._X_changed)
             self.result_explanation['changed'] = self.explainer.pd(
                 self._X_changed, 
                 self._idv, 
                 self.result_explanation['grid']
             )
-            d_loss = self._calculate_gradient_loss(d_output_input_long)
-            step = self.params['optimizer'].calculate_step(d_loss)
+
+            gradient = self.calculate_gradient(self._X_changed)
+            step = self.params['optimizer'].calculate_step(gradient)
             self._X_changed -= self.params['learning_rate'] * step
-            
+
             self.append_losses(i=i)
             if save_iter:
                 self.append_explanations(i=i)
@@ -128,42 +125,38 @@ class GradientAlgorithm(algorithm.Algorithm):
 
     #:# inside
 
-    def _calculate_gradient(self, data):
-        # gradient of output w.r.t input
+    def calculate_pdp(self, data_tensor):
+        data_long = tf.repeat(data_tensor, self._n_grid_points, axis=0)
+        grid_long = tf.tile(tf.convert_to_tensor(self.result_explanation['grid']), tf.convert_to_tensor([self._n]))
+        data_long = GradientAlgorithm.assign(data_long, (slice(None, None), self._idv), grid_long.reshape(-1, 1))
+        return tf.reshape(self.explainer.model(data_long), (self._n, self._n_grid_points)).mean(axis=0)
+    
+    def calculate_loss(self, result):
+        if self._aim:
+            return tf.keras.losses.mean_squared_error(self.result_explanation['target'], result)
+        else:
+            assert False, "Not implemented"
+    
+    def calculate_gradient(self, data):
         input = tf.convert_to_tensor(data)
         with tf.GradientTape() as t:
             t.watch(input)
-            output = self.explainer.model(input)
-            d_output_input = t.gradient(output, input).numpy()
-        return d_output_input
+            explanation = self.calculate_pdp(input)
+            loss = self.calculate_loss(explanation)
+            gradient = t.gradient(loss, input).numpy()
+        
+        return gradient
 
-    def _calculate_gradient_long(self, data):
-        # gradient of output w.r.t input with changed idv to splits
-        data_long = np.repeat(data, self._n_grid_points, axis=0)
-        # take splits for each observation
-        grid_long = np.tile(self.result_explanation['grid'], self._n)
-        data_long[:, self._idv] = grid_long
-        # merge X and splits in long format
-        d_output_input_long = self._calculate_gradient(data_long)
-        return d_output_input_long
-
-    def _calculate_gradient_loss(self, d):
-        # d = d_output_input_long
-        d = d.reshape(self._n, self._n_grid_points, self._p)
-        if self._aim:
-            d_loss = (d * (self.result_explanation['changed'] - self.result_explanation['target']).reshape(1, -1, 1)).mean(axis=1) 
-        else:
-            if self._center:
-                d_loss = - ((d - d.mean(axis=1).reshape(self._n, 1, self._p)) * \
-                    ((self.result_explanation['changed'] - self.result_explanation['changed'].mean()) -\
-                    (self.result_explanation['original'] - self.result_explanation['original'].mean())).reshape(1, -1, 1)).mean(axis=1)
-            else:
-                d_loss = - (d * (self.result_explanation['changed'] - self.result_explanation['original']).reshape(1, -1, 1)).mean(axis=1)  
-        d_loss = d_loss / self._n
-        d_loss[:, self._idv] = 0
-        if self._idc is not None:
-            d_loss[:, self._idc] = 0
-        return d_loss
+    def assign(tensor, slc, values):
+        '''
+            Tensorflow can't do
+                tensor[slc] = values
+            this is a workaround
+        '''
+        mask = np.zeros_like(tensor.numpy())
+        mask[slc] = 1
+        mask = tf.convert_to_tensor(mask)
+        return (1 - mask) * tensor + mask * values
 
     def _initialize(self):
         _X_std = self._X.std(axis=0) * 1/9

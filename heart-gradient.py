@@ -5,6 +5,9 @@
 
 
 import tensorflow as tf
+tf.experimental.numpy.experimental_enable_numpy_behavior(
+    prefer_float32=False
+)
 import argparse
 parser = argparse.ArgumentParser(description='main')
 parser.add_argument('--variable', default="age", type=str, help='variable')
