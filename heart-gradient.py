@@ -6,11 +6,13 @@
 
 import tensorflow as tf
 import argparse
+import os
 parser = argparse.ArgumentParser(description='main')
 parser.add_argument('--variable', default="age", type=str, help='variable')
 parser.add_argument('--strategy', default="target", type=str, help='strategy type')
 parser.add_argument('--iter', default=50, type=int, help='max iterations')
 parser.add_argument('--seed', default=0, type=int, help='random seed')
+parser.add_argument('--lr', default=0.1, type=float, help='learning rate for gradient algorithm')
 args = parser.parse_args()
 VARIABLE = args.variable
 
@@ -52,7 +54,7 @@ alg = code.GradientAlgorithm(
     explainer, 
     variable=VARIABLE,
     constant=CONSTANT,
-    learning_rate=0.1
+    learning_rate=args.lr
 )
 
 if args.strategy == "target":
@@ -60,6 +62,10 @@ if args.strategy == "target":
 else:
     alg.fool(max_iter=args.iter, random_state=args.seed)
 
-alg.plot_losses()
-alg.plot_explanation()
-alg.plot_data(constant=False)
+BASE_DIR = f"imgs/heart/{args.variable}_{args.seed}_gradient_{args.lr}"
+os.makedirs(BASE_DIR, exist_ok=True)
+
+alg.plot_losses(savefig=f"{BASE_DIR}/loss")
+alg.plot_explanation(savefig=f"{BASE_DIR}/expl")
+alg.plot_data(constant=False, savefig=f"{BASE_DIR}/data.png")
+alg.get_metrics(f"{BASE_DIR}/metrics.txt")

@@ -3,7 +3,6 @@ from copy import deepcopy
 import pandas as pd
 import warnings
 
-
 class Explainer:
     def __init__(self, model, data, predict_function=None):
         self.model = model

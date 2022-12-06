@@ -196,7 +196,7 @@ class Algorithm:
             plt.xlabel("variable: " + self._variable, fontsize=16)
             plt.ylabel("prediction", fontsize=16)
             if savefig:
-                plt.savefig(savefig)
+                plt.savefig(f"{savefig}_{explanation_name}.png")
             plt.show()
 
     def plot_data(self, i=0, constant=True, height=2, savefig=None):
@@ -239,5 +239,5 @@ class Algorithm:
             plt.xlabel("epoch", fontsize=16)
             plt.ylabel("loss", fontsize=16)
             if savefig:
-                plt.savefig(savefig)
+                plt.savefig(f"{savefig}_{explanation_name}.png")
             plt.show()
