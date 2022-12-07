@@ -27,6 +27,7 @@ class GradientAlgorithm(algorithm.Algorithm):
         constant=None,
         n_grid_points=21,
         learning_rate=1e-2,
+        explanation_names=["pd", "ale"],
         **kwargs
     ):
         super().__init__(
@@ -34,6 +35,7 @@ class GradientAlgorithm(algorithm.Algorithm):
             variable=variable,
             constant=constant,
             n_grid_points=n_grid_points,
+            explanation_names=explanation_names
         )
 
         params = dict(

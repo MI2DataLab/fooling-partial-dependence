@@ -5,7 +5,7 @@ class BasicModel(keras.Model):
     def __init__(
         self,
         size: int,
-        normalizer: keras.layers.Normalization
+        normalizer
     ):
         super().__init__()
         self.normalizer = normalizer

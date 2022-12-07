@@ -3,7 +3,6 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
-from copy import deepcopy
 
 
 class Algorithm:
@@ -20,6 +19,7 @@ class Algorithm:
         self._variable = variable
         self._n_grid_points = n_grid_points
 
+        self._X_original = explainer.original_data.values
         self._X = explainer.data.values
         self._n, self._p = self._X.shape
         self._idv = explainer.data.columns.get_loc(variable)
@@ -57,7 +57,14 @@ class Algorithm:
                     self._X[:, self._idv].max(),
                     self._n_grid_points,
                 )
+                # if self.explainer.constrain:
+                #     result_explanation["grid_original"] = np.linspace(
+                #                         self._X_original[:, self._idv].min(),
+                #                         self._X_original[:, self._idv].max(),
+                #                         self._n_grid_points,
+                #     )
         else:
+            NotImplementedError()
             if not isinstance(grid, np.ndarray):
                 raise TypeError("`grid` needs to be a np.ndarray")
             for result_explanation in self.result_explanations.values():
@@ -69,7 +76,9 @@ class Algorithm:
         ):
             explanation_func = getattr(self.explainer, explanation_name)
             result_explanation["original"] = explanation_func(
-                X=self._X, idv=self._idv, grid=result_explanation["grid"]
+                X=np.array(self._X),
+                idv=self._idv,
+                grid=result_explanation["grid"],
             )
 
             result_explanation["changed"] = np.zeros_like(result_explanation["grid"])
@@ -159,7 +168,7 @@ class Algorithm:
                 pass
                 # the code that was here was calling for a function that doesn't exist anyway
                 # TODO cleanup
-                
+
             for i, _ in enumerate(leg.get_lines()):
                 leg.get_lines()[i].set_linewidth(lw)
             plt.title(explanation_name.upper(), fontsize=20)
@@ -192,9 +201,13 @@ class Algorithm:
 
             for key in ("original", "changed"):
                 data_ = data[data.dataset == key].drop("dataset", axis=1).to_numpy()
-                result_explanation[key] = other_explanation_func(X=data_, idv=self._idv, grid=grid)
+                result_explanation[key] = other_explanation_func(
+                    X=data_, idv=self._idv, grid=grid
+                )
 
-            result_explanation["target"] = self.result_explanations[other_name]["target"] # TODO is this right?
+            result_explanation["target"] = self.result_explanations[other_name][
+                "target"
+            ]  # TODO is this right?
 
             if n == 1:
                 if categorical:
@@ -241,16 +254,18 @@ class Algorithm:
                 pass
                 # the code that was here was calling for a function that doesn't exist anyway
                 # TODO cleanup
-                
+
             for i, _ in enumerate(leg.get_lines()):
                 leg.get_lines()[i].set_linewidth(lw)
-            plt.title(f"{other_name.upper()} optmised on {explanation_name.upper()}", fontsize=20)
+            plt.title(
+                f"{other_name.upper()} optmised on {explanation_name.upper()}",
+                fontsize=20,
+            )
             plt.xlabel("variable: " + self._variable, fontsize=16)
             plt.ylabel("prediction", fontsize=16)
             if savefig:
                 plt.savefig(f"{savefig}_{explanation_name}_other.png")
             plt.show()
-
 
     def plot_data(self, i=0, constant=True, height=2, savefig=None):
         for explanation_name in self.result_explanations.keys():
