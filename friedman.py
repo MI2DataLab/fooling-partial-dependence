@@ -17,7 +17,6 @@ parser.add_argument('--size', default=16, type=int, help='number of neurons in l
 parser.add_argument('--iter', default=50, type=int, help='max iterations')
 parser.add_argument('--seed', default=0, type=int, help='random seed')
 parser.add_argument('--lr', default=1e-2, type=float, help='learning rate for gradient algorithm')
-parser.add_argument('--epochs', default=50, type=int, help='max epochs for gradient algorithm' )
 args = parser.parse_args()
 
 N = args.n
@@ -61,11 +60,11 @@ else:
     alg = code.GeneticAlgorithm(explainer, variable="x1", std_ratio=1/6)
 
 if args.strategy == "target":
-    alg.fool_aim(max_iter=args.iter, random_state=args.seed, max_iter=args.epochs)
+    alg.fool_aim(max_iter=args.iter, random_state=args.seed)
 else:
-    alg.fool(max_iter=args.iter, center=args.center, random_state=args.seed, max_iter=args.epochs)
+    alg.fool(max_iter=args.iter, center=args.center, random_state=args.seed)
 
-BASE_DIR = f"imgs/friedman/{DIM}_{SIZE}_{N}_{SEED}_{args.algorithm}_{LR}_{args.epochs}"
+BASE_DIR = f"imgs/friedman/{DIM}_{SIZE}_{N}_{SEED}_{args.algorithm}_{LR}_{args.iter}"
 os.makedirs(BASE_DIR, exist_ok=True)
 
 alg.plot_losses(savefig=f"{BASE_DIR}/loss")

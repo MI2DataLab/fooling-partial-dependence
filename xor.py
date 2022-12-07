@@ -62,7 +62,7 @@ else:
     alg.fool(max_iter=args.iter, center=args.center, random_state=args.seed)
 
 
-BASE_DIR = f"imgs/xor/{SIZE}_{N}_{SEED}_{args.algorithm}_{LR}"
+BASE_DIR = f"imgs/xor/{SIZE}_{N}_{SEED}_{args.algorithm}_{LR}_{args.iter}"
 os.makedirs(BASE_DIR, exist_ok=True)
 
 alg.plot_losses(savefig=f"{BASE_DIR}/loss")

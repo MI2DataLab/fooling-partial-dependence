@@ -62,7 +62,7 @@ if args.strategy == "target":
 else:
     alg.fool(max_iter=args.iter, random_state=args.seed)
 
-BASE_DIR = f"imgs/heart/{args.variable}_{args.seed}_gradient_{args.lr}"
+BASE_DIR = f"imgs/heart/{args.variable}_{args.seed}_gradient_{args.lr}_{args.iter}"
 os.makedirs(BASE_DIR, exist_ok=True)
 
 alg.plot_losses(savefig=f"{BASE_DIR}/loss")
