@@ -35,6 +35,7 @@ def arguments() -> Namespace:
         type=bool,
         help="choose wether to constrain data or not",
     )
+    parser.add_argument("--variable", default="x1", type=str, help="variable")
     args = parser.parse_args()
     return args
 
@@ -75,16 +76,16 @@ if __name__ == "__main__":
     explainer = code.Explainer(model, X, constrain=args.constrain)
 
     if args.algorithm == "gradient":
-        alg = code.GradientAlgorithm(explainer, variable="x1", learning_rate=args.lr)
+        alg = code.GradientAlgorithm(explainer, variable=args.variable, learning_rate=args.lr)
     else:
-        alg = code.GeneticAlgorithm(explainer, variable="x1", std_ratio=1 / 6)
+        alg = code.GeneticAlgorithm(explainer, variable=args.variable, std_ratio=1 / 6)
 
     if args.strategy == "target":
         alg.fool_aim(max_iter=args.iter, random_state=args.seed)
     else:
         alg.fool(max_iter=args.iter, center=args.center, random_state=args.seed)
 
-    BASE_DIR = f"imgs/friedman/{args.size}_{args.n}_{args.seed}_{args.algorithm}_{args.lr}_{args.iter}"
+    BASE_DIR = f"imgs/friedman/{args.size}_{args.n}_{args.seed}_{args.algorithm}_{args.lr}_{args.iter}_{args.variable}"
     if args.constrain:
         BASE_DIR += "_constrained"
     os.makedirs(BASE_DIR, exist_ok=True)
