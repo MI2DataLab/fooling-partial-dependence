@@ -252,6 +252,9 @@ class GradientAlgorithm(algorithm.Algorithm):
             l1 = np.abs(self.result_explanations[explanation_name]["original"] - self.result_explanations[explanation_name]["changed"]).mean()
             output_str += (f"{explanation_name} L1: {l1}\n")
 
+            max_diff = np.abs(self.result_explanations[explanation_name]["original"] - self.result_explanations[explanation_name]["changed"]).max()
+            output_str += (f"{explanation_name} max diff: {max_diff}\n")
+
             spearman_r, _ = stats.spearmanr(self.result_explanations[explanation_name]["original"],
                         self.result_explanations[explanation_name]["changed"])
             output_str += (f"{explanation_name} Spearman R: {spearman_r}\n")
