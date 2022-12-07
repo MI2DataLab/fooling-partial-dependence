@@ -91,5 +91,6 @@ if __name__ == "__main__":
 
     alg.plot_losses(savefig=f"{BASE_DIR}/loss")
     alg.plot_explanation(savefig=f"{BASE_DIR}/expl")
+    alg.plot_other_explanation(savefig=f"{BASE_DIR}/expl")
     alg.plot_data(constant=False, savefig=BASE_DIR)
     alg.get_metrics(f"{BASE_DIR}/metrics.txt")

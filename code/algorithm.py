@@ -3,6 +3,7 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
+from copy import deepcopy
 
 
 class Algorithm:
@@ -111,6 +112,8 @@ class Algorithm:
         for explanation_name, result_explanation in zip(
             self.result_explanations.keys(), self.result_explanations.values()
         ):
+            # print(result_explanation)
+            # assert False
             if n == 1:
                 if categorical:
 
@@ -153,44 +156,10 @@ class Algorithm:
                         )
                 leg = plt.legend(fontsize=14, loc=legend_loc)
             else:
-                plt.plot(
-                    result_explanation["grid"],
-                    result_explanation["original"],
-                    color="#000000",
-                    lw=lw,
-                )
-                explanation_func = getattr(self.explainer, explanation_name)
-                for i in range(n):
-                    plt.plot(
-                        result_explanation["grid"],
-                        explanation_func(
-                            self.get_best_data(i), self._idv, result_explanation["grid"]
-                        ),
-                        color=_colors[i],
-                        lw=2,
-                    )
-                if target and self._aim:
-                    plt.plot(
-                        result_explanation["grid"],
-                        result_explanation["target"],
-                        color="#FF0000",
-                        lw=lw,
-                    )
-                    leg = plt.legend(
-                        [
-                            "original",
-                            *["changed-" + str(i) for i in range(n)],
-                            "target",
-                        ],
-                        fontsize=14,
-                        loc=legend_loc,
-                    )
-                else:
-                    leg = plt.legend(
-                        ["original", *["changed-" + str(i) for i in range(n)]],
-                        fontsize=14,
-                        loc=legend_loc,
-                    )
+                pass
+                # the code that was here was calling for a function that doesn't exist anyway
+                # TODO cleanup
+                
             for i, _ in enumerate(leg.get_lines()):
                 leg.get_lines()[i].set_linewidth(lw)
             plt.title(explanation_name.upper(), fontsize=20)
@@ -199,6 +168,89 @@ class Algorithm:
             if savefig:
                 plt.savefig(f"{savefig}_{explanation_name}.png")
             plt.show()
+
+    def plot_other_explanation(
+        self,
+        target=True,
+        n=1,
+        lw=3,
+        categorical=False,
+        legend_loc=0,
+        figsize=(9, 6),  # 7.2, 4.8
+        savefig=None,
+    ):
+        plt.rcParams["legend.handlelength"] = 2
+        plt.rcParams["figure.figsize"] = figsize
+        _colors = sns.color_palette("Set2").as_hex()
+
+        for explanation_name in self.result_explanations.keys():
+            other_name = "ale" if explanation_name == "pd" else "pd"
+            other_explanation_func = getattr(self.explainer, other_name)
+            data = self.result_data[explanation_name]
+            grid = self.result_explanations[explanation_name]["grid"]
+            result_explanation = {"grid": grid}
+
+            for key in ("original", "changed"):
+                data_ = data[data.dataset == key].drop("dataset", axis=1).to_numpy()
+                result_explanation[key] = other_explanation_func(X=data_, idv=self._idv, grid=grid)
+
+            result_explanation["target"] = self.result_explanations[other_name]["target"] # TODO is this right?
+
+            if n == 1:
+                if categorical:
+                    _df = pd.DataFrame(result_explanation)
+                    _df = pd.melt(
+                        _df,
+                        id_vars=["grid"],
+                        value_vars=["original", "changed"],
+                        var_name="dataset",
+                        value_name="prediction",
+                    )
+                    _df.grid = _df.grid.astype(int)
+                    sns.barplot(
+                        x="grid",
+                        y="prediction",
+                        hue="dataset",
+                        data=_df,
+                        palette=sns.color_palette("Set1").as_hex()[0:2][::-1],
+                    )
+                else:
+                    _df = pd.DataFrame(result_explanation).set_index("grid")
+                    if "target" not in _df.columns:
+                        sns.lineplot(
+                            data=_df,
+                            linewidth=lw,
+                            palette=sns.color_palette("Set1").as_hex()[0:2][::-1],
+                        )
+                    elif target is False:
+                        sns.lineplot(
+                            data=_df.drop("target", axis=1),
+                            linewidth=lw,
+                            palette=sns.color_palette("Set1").as_hex()[0:2][::-1],
+                        )
+                    else:
+                        sns.lineplot(
+                            data=_df,
+                            linewidth=lw,
+                            palette=sns.color_palette("Set1").as_hex()[0:2][::-1]
+                            + ["grey"],
+                        )
+                leg = plt.legend(fontsize=14, loc=legend_loc)
+
+            else:
+                pass
+                # the code that was here was calling for a function that doesn't exist anyway
+                # TODO cleanup
+                
+            for i, _ in enumerate(leg.get_lines()):
+                leg.get_lines()[i].set_linewidth(lw)
+            plt.title(f"{other_name.upper()} optmised on {explanation_name.upper()}", fontsize=20)
+            plt.xlabel("variable: " + self._variable, fontsize=16)
+            plt.ylabel("prediction", fontsize=16)
+            if savefig:
+                plt.savefig(f"{savefig}_{explanation_name}_other.png")
+            plt.show()
+
 
     def plot_data(self, i=0, constant=True, height=2, savefig=None):
         for explanation_name in self.result_explanations.keys():
