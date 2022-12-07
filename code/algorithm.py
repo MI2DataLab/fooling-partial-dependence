@@ -223,6 +223,7 @@ class Algorithm:
                 _df = _df.drop(_df.columns[self._idc], axis=1)
             ax = sns.pairplot(_df, hue="dataset", height=height, palette=_colors)
             ax._legend.set_bbox_to_anchor((0.62, 0.64))
+            plt.title("Data - " + explanation_name.upper(), fontsize=20)
             if savefig:
                 ax.savefig(savefig, bbox_inches="tight")
             plt.show()
@@ -242,3 +243,7 @@ class Algorithm:
             if savefig:
                 plt.savefig(f"{savefig}_{explanation_name}.png")
             plt.show()
+
+
+def sigmoid(x):
+    return 1.0 / (1.0 + np.exp(-x))

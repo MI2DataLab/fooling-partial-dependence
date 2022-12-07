@@ -121,9 +121,14 @@ class GradientAlgorithm(algorithm.Algorithm):
             )
 
             #self.result_data[explanation_name] = self._X_changed
+            _X_changed = deepcopy(self._X_changed)
+            if self.explainer.constrain:
+                for i in range(_X_changed.shape[1]):
+                    _X_changed[:,i] = sigmoid(_X_changed[:,i])
+                    _X_changed[:,i] = self.explainer.unnormalizator[i](_X_changed[:,i])
 
             _data_changed = pd.DataFrame(
-                self._X_changed, columns=self.explainer.data.columns
+                _X_changed, columns=self.explainer.data.columns
             )
             self.result_data[explanation_name] = (
                 pd.concat((self.explainer.original_data, _data_changed))
