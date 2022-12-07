@@ -58,20 +58,23 @@ class GradientAlgorithm(algorithm.Algorithm):
 
         self._aim = aim
         self._center = not aim if center is None else center
-        if aim is False:
-            super().fool(grid=grid, random_state=random_state)
+        self._result_data = {}
 
-        # init algorithm
-        self._initialize()
 
         for j, (explanation_name, result_explanation) in enumerate(
             zip(self.result_explanations.keys(), self.result_explanations.values())
         ):
+            if aim is False:
+                super().fool(grid=grid, random_state=random_state)
+
+            # init algorithm
+            self._initialize()
             explanation_func = getattr(self.explainer, explanation_name)
 
             result_explanation["changed"] = explanation_func(
                 self._X_changed, self._idv, result_explanation["grid"]
             )
+            
             if j > 0:
                 self.append_losses(explanation_name)
             else:
@@ -113,6 +116,10 @@ class GradientAlgorithm(algorithm.Algorithm):
             result_explanation["changed"] = explanation_func(
                 X=self._X_changed, idv=self._idv, grid=result_explanation["grid"]
             )
+
+            self.result_data[explanation_name] = self._X_changed
+
+            
 
         _data_changed = pd.DataFrame(
             self._X_changed, columns=self.explainer.data.columns
