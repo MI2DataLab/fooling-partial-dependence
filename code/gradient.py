@@ -292,7 +292,7 @@ class GradientAlgorithm(algorithm.Algorithm):
 
             spearman_r, _ = stats.spearmanr(explanation["original"],
                         explanation["changed"])
-            output_str += (f"{name} Spearman R: {spearman_r}\n")
+            output_str += (f"{name} Spearman rho: {spearman_r}\n")
 
         print(output_str)
         if save_path:
