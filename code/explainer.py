@@ -1,21 +1,47 @@
 import numpy as np
+import tensorflow as tf
 from copy import deepcopy
 import pandas as pd
 import warnings
 
+
 class Explainer:
-    def __init__(self, model, data, predict_function=None):
+    def __init__(self, model, data, predict_function=None, constrain=False):
         self.model = model
 
-        if isinstance(data, pd.DataFrame):
-            self.data = data
-        elif isinstance(data, np.ndarray):
+        self.original_data = data
+        data_copy = deepcopy(data)
+        self.constrain = constrain
+        if constrain:
+            self.normalizator = [
+                lambda x, c=c: (x - data_copy[c].min())
+                / (data_copy[c].max() - data_copy[c].min())
+                for c in data_copy.columns
+            ]
+
+            self.unnormalizator = [
+                lambda x, c=c: x * (data_copy[c].max() - data_copy[c].min())
+                + data_copy[c].min()
+                for c in data_copy.columns
+            ]
+
+            for i, column in enumerate(data_copy.columns):
+                data_copy[column] = self.normalizator[i](data_copy[column])
+
+                data_copy.loc[data_copy[column] > 0.999, column] = 1.0 - 1e-9
+                data_copy.loc[data_copy[column] < 0.001, column] = 1e-9
+
+                data_copy[column] = logit(data_copy[column])
+
+        if isinstance(data_copy, pd.DataFrame):
+            self.data = data_copy
+        elif isinstance(data_copy, np.ndarray):
             warnings.warn("`data` is a numpy.ndarray -> coercing to pandas.DataFrame.")
-            self.data = pd.DataFrame(data)
+            self.data = pd.DataFrame(data_copy)
         else:
             raise TypeError(
                 "`data` is a "
-                + str(type(data))
+                + str(type(data_copy))
                 + ", and it should be a pandas.DataFrame."
             )
 
@@ -58,7 +84,7 @@ class Explainer:
                     )
 
         try:
-            pred = self.predict(data.values)
+            pred = self.predict(data_copy.values)
         except:
             raise ValueError("`predict_function(model, data)` returns an error.")
         if not isinstance(pred, np.ndarray):
@@ -75,6 +101,12 @@ class Explainer:
             )
 
     def predict(self, data):
+        if self.constrain:
+            data_copy = deepcopy(data)
+            for i in range(data_copy.shape[1]):
+                data_copy[:, i] = sigmoid(data_copy[:, i])
+                data_copy[:, i] = self.unnormalizator[i](data_copy[:, i])
+            return self.predict_function(self.model, data_copy)
         return self.predict_function(self.model, data)
 
     # ************* pd *************** #
@@ -169,3 +201,12 @@ class Explainer:
         z = np.append(z, [z[-1]]) - c
 
         return z
+
+
+def logit(x):
+    """Computes the logit function, i.e. the logistic sigmoid inverse."""
+    return -tf.math.log(1.0 / x - 1.0)
+
+
+def sigmoid(x):
+    return tf.math.sigmoid(x)

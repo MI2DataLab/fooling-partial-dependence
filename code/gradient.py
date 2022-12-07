@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 import tqdm
+from copy import deepcopy
 
 from . import algorithm
 from . import loss
@@ -14,6 +15,8 @@ except:
     import warnings
 
     warnings.warn("`import tensorflow as tf` returns an error: gradient.py won't work.")
+
+from code.explainer import sigmoid
 
 
 class GradientAlgorithm(algorithm.Algorithm):
@@ -117,23 +120,21 @@ class GradientAlgorithm(algorithm.Algorithm):
                 X=self._X_changed, idv=self._idv, grid=result_explanation["grid"]
             )
 
-            self.result_data[explanation_name] = self._X_changed
+            #self.result_data[explanation_name] = self._X_changed
 
-            
-
-        _data_changed = pd.DataFrame(
-            self._X_changed, columns=self.explainer.data.columns
-        )
-        self.result_data = (
-            pd.concat((self.explainer.data, _data_changed))
-            .reset_index(drop=True)
-            .rename(index={"0": "original", "1": "changed"})
-            .assign(
-                dataset=pd.Series(["original", "changed"])
-                .repeat(self._n)
-                .reset_index(drop=True)
+            _data_changed = pd.DataFrame(
+                self._X_changed, columns=self.explainer.data.columns
             )
-        )
+            self.result_data[explanation_name] = (
+                pd.concat((self.explainer.original_data, _data_changed))
+                .reset_index(drop=True)
+                .rename(index={"0": "original", "1": "changed"})
+                .assign(
+                    dataset=pd.Series(["original", "changed"])
+                    .repeat(self._n)
+                    .reset_index(drop=True)
+                )
+            )
 
     def fool_aim(
         self,
@@ -167,7 +168,13 @@ class GradientAlgorithm(algorithm.Algorithm):
 
     def _calculate_gradient_long(self, result_explanation, data):
         # gradient of output w.r.t input with changed idv to splits
-        data_long = np.repeat(data, self._n_grid_points, axis=0)
+        data_copy = deepcopy(data)
+        if self.explainer.constrain:
+            for i in range(data_copy.shape[1]):
+                data_copy[:, i] = sigmoid(data_copy[:, i])
+                data_copy[:, i] = self.explainer.unnormalizator[i](data_copy[:, i])
+
+        data_long = np.repeat(data_copy, self._n_grid_points, axis=0)
         # take splits for each observation
         grid_long = np.tile(result_explanation["grid"], self._n)
         data_long[:, self._idv] = grid_long

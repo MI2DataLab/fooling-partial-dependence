@@ -200,31 +200,32 @@ class Algorithm:
             plt.show()
 
     def plot_data(self, i=0, constant=True, height=2, savefig=None):
-        plt.rcParams["legend.handlelength"] = 0.1
-        _colors = sns.color_palette("Set1").as_hex()[0:2][::-1]
-        if i == 0:
-            _df = self.result_data
-        else:
-            _data_changed = pd.DataFrame(
-                self.get_best_data(i), columns=self.explainer.data.columns
-            )
-            _df = (
-                pd.concat((self.explainer.data, _data_changed))
-                .reset_index(drop=True)
-                .rename(index={"0": "original", "1": "changed"})
-                .assign(
-                    dataset=pd.Series(["original", "changed"])
-                    .repeat(self._n)
-                    .reset_index(drop=True)
+        for explanation_name in self.result_explanations.keys():
+            plt.rcParams["legend.handlelength"] = 0.1
+            _colors = sns.color_palette("Set1").as_hex()[0:2][::-1]
+            if i == 0:
+                _df = self.result_data[explanation_name]
+            else:
+                _data_changed = pd.DataFrame(
+                    self.get_best_data(i), columns=self.explainer.data.columns
                 )
-            )
-        if not constant and self._idc is not None:
-            _df = _df.drop(_df.columns[self._idc], axis=1)
-        ax = sns.pairplot(_df, hue="dataset", height=height, palette=_colors)
-        ax._legend.set_bbox_to_anchor((0.62, 0.64))
-        if savefig:
-            ax.savefig(savefig, bbox_inches="tight")
-        plt.show()
+                _df = (
+                    pd.concat((self.explainer.original_data, _data_changed))
+                    .reset_index(drop=True)
+                    .rename(index={"0": "original", "1": "changed"})
+                    .assign(
+                        dataset=pd.Series(["original", "changed"])
+                        .repeat(self._n)
+                        .reset_index(drop=True)
+                    )
+                )
+            if not constant and self._idc is not None:
+                _df = _df.drop(_df.columns[self._idc], axis=1)
+            ax = sns.pairplot(_df, hue="dataset", height=height, palette=_colors)
+            ax._legend.set_bbox_to_anchor((0.62, 0.64))
+            if savefig:
+                ax.savefig(savefig, bbox_inches="tight")
+            plt.show()
 
     def plot_losses(self, lw=3, figsize=(9, 6), savefig=None):
         for explanation_name in self.iter_losses["loss"].keys():
