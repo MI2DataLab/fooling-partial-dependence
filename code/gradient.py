@@ -257,26 +257,42 @@ class GradientAlgorithm(algorithm.Algorithm):
     
     def get_metrics(self, save_path=None):
         output_str = ""
-        for explanation_name in self.result_explanations.keys():
+        names = ("ALE", "PD", "PD optimised on ALE", "ALE optimised on PD")
+        expls = [self.result_explanations["ale"], self.result_explanations["pd"]]
+        for explanation_name in ("ale", "pd"):
+            other_name = "ale" if explanation_name == "pd" else "pd"
+            other_explanation_func = getattr(self.explainer, other_name)
+            data = self.result_data[explanation_name]
+            grid = self.result_explanations[explanation_name]["grid"]
+            result_explanation = {"grid": grid}
+
+            for key in ("original", "changed"):
+                data_ = data[data.dataset == key].drop("dataset", axis=1).to_numpy()
+                result_explanation[key] = other_explanation_func(X=data_, idv=self._idv, grid=grid)
+
+            result_explanation["target"] = self.result_explanations[other_name]["target"]
+            expls.append(result_explanation)
+
+        for name, explanation in zip(names, expls):
             _loss = loss.loss(
-            original=self.result_explanations[explanation_name]["original"],
-            changed=self.result_explanations[explanation_name]["changed"],
+            original=explanation["original"],
+            changed=explanation["changed"],
             aim=self._aim,
             center=self._center,
             )
 
 
-            output_str += (f"{explanation_name} L2: {_loss}\n")
+            output_str += (f"{name} L2: {_loss}\n")
 
-            l1 = np.abs(self.result_explanations[explanation_name]["original"] - self.result_explanations[explanation_name]["changed"]).mean()
-            output_str += (f"{explanation_name} L1: {l1}\n")
+            l1 = np.abs(explanation["original"] - explanation["changed"]).mean()
+            output_str += (f"{name} L1: {l1}\n")
 
-            max_diff = np.abs(self.result_explanations[explanation_name]["original"] - self.result_explanations[explanation_name]["changed"]).max()
-            output_str += (f"{explanation_name} max diff: {max_diff}\n")
+            max_diff = np.abs(explanation["original"] - explanation["changed"]).max()
+            output_str += (f"{name} max diff: {max_diff}\n")
 
-            spearman_r, _ = stats.spearmanr(self.result_explanations[explanation_name]["original"],
-                        self.result_explanations[explanation_name]["changed"])
-            output_str += (f"{explanation_name} Spearman R: {spearman_r}\n")
+            spearman_r, _ = stats.spearmanr(explanation["original"],
+                        explanation["changed"])
+            output_str += (f"{name} Spearman R: {spearman_r}\n")
 
         print(output_str)
         if save_path:
