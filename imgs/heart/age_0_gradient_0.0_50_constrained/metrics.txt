@@ -1,0 +1,16 @@
+ALE L2: 0.0
+ALE L1: 0.0
+ALE max diff: 0.0
+ALE Spearman rho: nan
+PD L2: 1.2083571164112072e-05
+PD L1: 0.0034761428833007812
+PD max diff: 0.0034761428833007812
+PD Spearman rho: nan
+PD optimised on ALE L2: 7.904818488668752e-08
+PD optimised on ALE L1: 0.0002811551094055176
+PD optimised on ALE max diff: 0.0002811551094055176
+PD optimised on ALE Spearman rho: nan
+ALE optimised on PD L2: 0.0
+ALE optimised on PD L1: 0.0
+ALE optimised on PD max diff: 0.0
+ALE optimised on PD Spearman rho: nan

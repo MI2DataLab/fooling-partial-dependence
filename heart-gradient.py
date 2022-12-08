@@ -28,6 +28,7 @@ VARIABLES = {
 }
 CONSTANT = ["sex", "cp", "fbs", "restecg", "exang", "slope", "ca", "thal"]
 
+
 def arguments() -> Namespace:
     parser = ArgumentParser(description="main")
     parser.add_argument("--variable", default="age", type=str, help="variable")
@@ -42,6 +43,13 @@ def arguments() -> Namespace:
         default=False,
         type=bool,
         help="choose wether to constrain data or not",
+    )
+    parser.add_argument(
+        "--explanations",
+        default=["pd", "ale"],
+        type=str,
+        nargs="+",
+        help="list of explanations",
     )
     args = parser.parse_args()
     return args
@@ -74,7 +82,11 @@ if __name__ == "__main__":
     explainer = code.Explainer(model, X, constrain=args.constrain)
 
     alg = code.GradientAlgorithm(
-        explainer, variable=args.variable, constant=CONSTANT, learning_rate=args.lr
+        explainer,
+        variable=args.variable,
+        constant=CONSTANT,
+        learning_rate=args.lr,
+        explanation_names=args.explanations,
     )
 
     if args.strategy == "target":

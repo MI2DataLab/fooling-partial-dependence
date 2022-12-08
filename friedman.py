@@ -35,6 +35,13 @@ def arguments() -> Namespace:
         type=bool,
         help="choose wether to constrain data or not",
     )
+    parser.add_argument(
+        "--explanations",
+        default=["pd", "ale"],
+        type=str,
+        nargs="+",
+        help="list of explanations",
+    )
     parser.add_argument("--variable", default="x1", type=str, help="variable")
     args = parser.parse_args()
     return args
@@ -76,7 +83,12 @@ if __name__ == "__main__":
     explainer = code.Explainer(model, X, constrain=args.constrain)
 
     if args.algorithm == "gradient":
-        alg = code.GradientAlgorithm(explainer, variable=args.variable, learning_rate=args.lr)
+        alg = code.GradientAlgorithm(
+            explainer,
+            variable=args.variable,
+            learning_rate=args.lr,
+            explanation_names=args.explanations,
+        )
     else:
         alg = code.GeneticAlgorithm(explainer, variable=args.variable, std_ratio=1 / 6)
 

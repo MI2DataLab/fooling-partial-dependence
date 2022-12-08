@@ -11,6 +11,7 @@ import os
 import code
 import numpy as np
 import pandas as pd
+from code.model import BasicModel
 
 
 def arguments() -> Namespace:
@@ -35,6 +36,13 @@ def arguments() -> Namespace:
         type=bool,
         help="choose wether to constrain data or not",
     )
+    parser.add_argument(
+        "--explanations",
+        default=["pd", "ale"],
+        type=str,
+        nargs="+",
+        help="list of explanations",
+    )
     args = parser.parse_args()
     return args
 
@@ -42,7 +50,7 @@ def arguments() -> Namespace:
 if __name__ == "__main__":
     args = arguments()
     tf.random.set_seed(args.seed)
-
+    print(args.explanations)
     np.random.seed(args.seed)
     x1 = np.random.normal(size=args.n)
     x2 = np.random.normal(size=args.n)
@@ -53,6 +61,7 @@ if __name__ == "__main__":
     normalizer = tf.keras.layers.experimental.preprocessing.Normalization()
     normalizer.adapt(X)
 
+    #model = BasicModel(args.size, normalizer)
     model = tf.keras.Sequential()
     model.add(normalizer)
     model.add(tf.keras.layers.Dense(args.size, activation="relu"))
@@ -68,7 +77,12 @@ if __name__ == "__main__":
     explainer = code.Explainer(model, X, constrain=args.constrain)
 
     if args.algorithm == "gradient":
-        alg = code.GradientAlgorithm(explainer, variable="x1", learning_rate=args.lr)
+        alg = code.GradientAlgorithm(
+            explainer,
+            variable="x1",
+            learning_rate=args.lr,
+            explanation_names=args.explanations,
+        )
     else:
         alg = code.GeneticAlgorithm(explainer, variable="x1", std_ratio=1 / 6)
 
@@ -77,7 +91,6 @@ if __name__ == "__main__":
     else:
         alg.fool(max_iter=args.iter, center=args.center, random_state=args.seed)
 
-    
     BASE_DIR = f"imgs/xor/{args.size}_{args.n}_{args.seed}_{args.algorithm}_{args.lr}_{args.iter}"
     if args.constrain:
         BASE_DIR += "_constrained"
