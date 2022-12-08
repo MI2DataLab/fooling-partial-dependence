@@ -39,6 +39,9 @@ def arguments() -> Namespace:
         "--lr", default=0.1, type=float, help="learning rate for gradient algorithm"
     )
     parser.add_argument(
+        "--size", default=128, type=int, help="number of neurons in layers"
+    )
+    parser.add_argument(
         "--constrain",
         default=False,
         type=bool,
@@ -69,8 +72,8 @@ if __name__ == "__main__":
 
     model = tf.keras.Sequential()
     model.add(normalizer)
-    model.add(tf.keras.layers.Dense(128, activation="relu"))
-    model.add(tf.keras.layers.Dense(128, activation="relu"))
+    model.add(tf.keras.layers.Dense(args.size, activation="relu"))
+    model.add(tf.keras.layers.Dense(args.size, activation="relu"))
     model.add(tf.keras.layers.Dense(1, activation="sigmoid"))
     model.compile(
         loss="binary_crossentropy",
@@ -94,7 +97,7 @@ if __name__ == "__main__":
     else:
         alg.fool(max_iter=args.iter, random_state=args.seed)
 
-    BASE_DIR = f"imgs/heart/{args.variable}_{args.seed}_gradient_{args.lr}_{args.iter}"
+    BASE_DIR = f"imgs/heart/{args.variable}_{args.size}_{args.seed}_gradient_{args.lr}_{args.iter}"
     if args.constrain:
         BASE_DIR += "_constrained"
     os.makedirs(BASE_DIR, exist_ok=True)

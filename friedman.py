@@ -98,7 +98,7 @@ if __name__ == "__main__":
     else:
         alg.fool(max_iter=args.iter, center=args.center, random_state=args.seed)
 
-    BASE_DIR = f"imgs/friedman/{args.size}_{args.n}_{args.seed}_{args.algorithm}_{args.lr}_{args.iter}_{args.variable}"
+    BASE_DIR = f"imgs/friedman/{args.variable}_{args.size}_{args.n}_{args.seed}_{args.algorithm}_{args.lr}_{args.iter}"
     if args.constrain:
         BASE_DIR += "_constrained"
     os.makedirs(BASE_DIR, exist_ok=True)

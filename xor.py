@@ -50,7 +50,6 @@ def arguments() -> Namespace:
 if __name__ == "__main__":
     args = arguments()
     tf.random.set_seed(args.seed)
-    print(args.explanations)
     np.random.seed(args.seed)
     x1 = np.random.normal(size=args.n)
     x2 = np.random.normal(size=args.n)
