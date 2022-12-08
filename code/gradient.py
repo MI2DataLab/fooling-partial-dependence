@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 import tqdm
 from copy import deepcopy
+import os
 
 from . import algorithm
 from . import loss
@@ -28,14 +29,14 @@ class GradientAlgorithm(algorithm.Algorithm):
         n_grid_points=21,
         learning_rate=1e-2,
         explanation_names=["pd", "ale"],
-        **kwargs
+        **kwargs,
     ):
         super().__init__(
             explainer=explainer,
             variable=variable,
             constant=constant,
             n_grid_points=n_grid_points,
-            explanation_names=explanation_names
+            explanation_names=explanation_names,
         )
 
         params = dict(
@@ -65,7 +66,6 @@ class GradientAlgorithm(algorithm.Algorithm):
         self._center = not aim if center is None else center
         self._result_data = {}
 
-
         for j, (explanation_name, result_explanation) in enumerate(
             zip(self.result_explanations.keys(), self.result_explanations.values())
         ):
@@ -79,7 +79,7 @@ class GradientAlgorithm(algorithm.Algorithm):
             result_explanation["changed"] = explanation_func(
                 self._X_changed, self._idv, result_explanation["grid"]
             )
-            
+
             if j > 0:
                 self.append_losses(explanation_name)
             else:
@@ -122,7 +122,7 @@ class GradientAlgorithm(algorithm.Algorithm):
                 X=self._X_changed, idv=self._idv, grid=result_explanation["grid"]
             )
 
-            #self.result_data[explanation_name] = self._X_changed
+            # self.result_data[explanation_name] = self._X_changed
             _X_changed = deepcopy(self._X_changed)
             # if self.explainer.constrain:
             #     for i in range(_X_changed.shape[1]):
@@ -256,9 +256,29 @@ class GradientAlgorithm(algorithm.Algorithm):
             explanation_name
         ]["changed"]
 
-    
     def get_metrics(self, save_path=None):
         output_str = ""
+        df = pd.DataFrame(
+            columns=[
+                "Name",
+                "ALE L2",
+                "ALE L1",
+                "ALE max diff",
+                "ALE Spearman rho",
+                "PD L2",
+                "PD L1",
+                "PD max diff",
+                "PD Spearman rho",
+                "PD optimised on ALE L2",
+                "PD optimised on ALE L1",
+                "PD optimised on ALE max diff",
+                "PD optimised on ALE Spearman rho",
+                "ALE optimised on PD L2",
+                "ALE optimised on PD L1",
+                "ALE optimised on PD max diff",
+                "ALE optimised on PD Spearman rho",
+            ]
+        )
         names = ("ALE", "PD", "PD optimised on ALE", "ALE optimised on PD")
         expls = [self.result_explanations["ale"], self.result_explanations["pd"]]
         for explanation_name in ("ale", "pd"):
@@ -270,39 +290,44 @@ class GradientAlgorithm(algorithm.Algorithm):
 
             for key in ("original", "changed"):
                 data_ = data[data.dataset == key].drop("dataset", axis=1).to_numpy()
-                result_explanation[key] = other_explanation_func(X=data_, idv=self._idv, grid=grid)
+                result_explanation[key] = other_explanation_func(
+                    X=data_, idv=self._idv, grid=grid
+                )
 
-            result_explanation["target"] = self.result_explanations[other_name]["target"]
+            result_explanation["target"] = self.result_explanations[other_name][
+                "target"
+            ]
             expls.append(result_explanation)
 
+        name = save_path.split("/")
+        new_row = [os.path.join(name[1], name[2])]
         for name, explanation in zip(names, expls):
             _loss = loss.loss(
-            original=explanation["original"],
-            changed=explanation["changed"],
-            aim=self._aim,
-            center=self._center,
+                original=explanation["original"],
+                changed=explanation["changed"],
+                aim=self._aim,
+                center=self._center,
             )
 
-
-            output_str += (f"{name} L2: {_loss}\n")
+            output_str += f"{name} L2: {_loss}\n"
 
             l1 = np.abs(explanation["original"] - explanation["changed"]).mean()
-            output_str += (f"{name} L1: {l1}\n")
+            output_str += f"{name} L1: {l1}\n"
 
             max_diff = np.abs(explanation["original"] - explanation["changed"]).max()
-            output_str += (f"{name} max diff: {max_diff}\n")
+            output_str += f"{name} max diff: {max_diff}\n"
 
-            spearman_r, _ = stats.spearmanr(explanation["original"],
-                        explanation["changed"])
-            output_str += (f"{name} Spearman rho: {spearman_r}\n")
+            spearman_r, _ = stats.spearmanr(
+                explanation["original"], explanation["changed"]
+            )
+            output_str += f"{name} Spearman rho: {spearman_r}\n"
 
+            new_row.extend([_loss, l1, max_diff, spearman_r])
+        
+        df.loc[len(df.index)] = new_row
+        print(df)
+        df.to_csv(save_path + ".csv", index=None)
         print(output_str)
         if save_path:
-            with open(save_path, "w") as text_file:
+            with open(save_path + ".txt", "w") as text_file:
                 text_file.write(output_str)
-
-
-
-
-
-        

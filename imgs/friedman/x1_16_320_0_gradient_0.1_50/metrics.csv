@@ -1,0 +1,2 @@
+Name,ALE L2,ALE L1,ALE max diff,ALE Spearman rho,PD L2,PD L1,PD max diff,PD Spearman rho,PD optimised on ALE L2,PD optimised on ALE L1,PD optimised on ALE max diff,PD optimised on ALE Spearman rho,ALE optimised on PD L2,ALE optimised on PD L1,ALE optimised on PD max diff,ALE optimised on PD Spearman rho
+friedman/x1_16_320_0_gradient_0.1_50,0.051379938817464686,0.20197526386706147,0.41194389773410933,-0.9922027290448343,0.063145295,0.2212342,0.47287908,-1.0,0.06426736,0.22259843,0.4777451,-1.0,0.05124586518441325,0.2016179293630319,0.41181574325513365,-0.9922027290448343
