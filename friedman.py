@@ -54,7 +54,8 @@ if __name__ == "__main__":
         + 10 * X[:, 3]
         + 5 * X[:, 4]
     )
-    y = (y > (y.mean())).astype(int)
+    EXPECTED_Y_VALUE = 14.5
+    y = (y > EXPECTED_Y_VALUE).astype(int)
     X = X[:, : args.dim]
     X = pd.DataFrame(X, columns=[f"x{i+1}" for i in range(args.dim)])
 
