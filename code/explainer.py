@@ -115,3 +115,78 @@ class Explainer:
         y = y_pop_long.mean(axis=1)
 
         return y
+    
+    def ale(self, X, idv, seg_num):
+        """
+        numpy implementation of ale calculation for 1 variable 
+        
+        takes:
+        X - np.ndarray (2d), data
+        idv - int, index of variable to calculate profile
+        seg_num - number of segments
+        
+        returns:
+        y - np.ndarray (1d), vector of pd profile values
+        """
+        X_sorted = X[X[:, idv].argsort()]
+        
+        min_V = X_sorted[0, idv]
+        max_V = X_sorted[-1, idv]
+        
+        z = np.linspace(min_V, max_V, num=seg_num)
+        z_idx = np.searchsorted(X_sorted, z)
+        N = z_idx[1:] - z_idx[:-1]
+        
+        g = 0
+        y = np.zeros(seg_num)
+        for k in range(1, seg_num+1):
+            segment = X_sorted[z_idx[k-1]:z_idx[k]]
+            X_zk = segment.copy()
+            X_zk[:, idv] = z[k]
+            X_zkm1 = segment.copy()
+            X_zkm1[:, idv] = [k-1]
+            sum = np.sum(self.model(X_zk) - self.model(X_zkm1))
+            g = g + sum / N[k-1]
+            y[k-1] = g
+        
+        return y
+
+
+    # def ale_pop(self, X_pop, idv, seg_num):
+    #     """
+    #     numpy implementation of ale calculation for 1 variable 
+        
+    #     takes:
+    #     X - np.ndarray (2d), data
+    #     idv - int, index of variable to calculate profile
+    #     seg_num - number of segments
+        
+    #     returns:
+    #     y - np.ndarray (1d), vector of pd profile values
+    #     """
+    #     X_sorted = X_pop[X_pop[:, idv].argsort()]
+        
+    #     min_V = X_sorted[0, idv]
+    #     max_V = X_sorted[-1, idv]
+        
+    #     z = np.linspace(min_V, max_V, num=seg_num)
+    #     z_idx = np.searchsorted(X_sorted, z)
+    #     N = z_idx[1:] - z_idx[:-1]
+        
+    #     g = 0
+    #     y = np.zeros(seg_num)
+    #     for k in range(1, seg_num+1):
+    #         segment = X_sorted[z_idx[k-1]:z_idx[k]]
+    #         X_zk = segment.copy()
+    #         X_zk[:, idv] = z[k]
+    #         X_zkm1 = segment.copy()
+    #         X_zkm1[:, idv] = [k-1]
+    #         sum = np.sum(self.model(X_zk) - self.model(X_zkm1))
+    #         g = g + sum / N[k-1]
+    #         y[k-1] = g
+        
+    #     return y
+        
+
+
+

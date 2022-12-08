@@ -49,31 +49,47 @@ class GradientAlgorithm(algorithm.Algorithm):
         save_iter=False,
         verbose=True,
         aim=False,
-        center=None
+        center=None,
+        method="pd",
+        seg_num=None
     ):
         self._aim = aim
         self._center = not aim if center is None else center
         if aim is False:
-            super().fool(grid=grid, random_state=random_state)
+            super().fool(grid=grid, random_state=random_state, method=method, seg_num=seg_num)
 
         # init algorithm
         self._initialize()
-        self.result_explanation['changed'] = self.explainer.pd(
-            self._X_changed, 
-            self._idv, 
-            self.result_explanation['grid']
-        )
+        if method == "pd":
+            self.result_explanation['changed'] = self.explainer.pd(
+                self._X_changed, 
+                self._idv, 
+                self.result_explanation['grid']
+            )
+        elif method == "ale":
+            self.result_explanation['changed'] = self.explainer.ale(
+                self._X_changed, 
+                self._idv, 
+                self.result_explanation['seg_num']
+            )
         self.append_losses(i=0)
         if save_iter:
             self.append_explanations(i=0)
 
         pbar = tqdm.tqdm(range(1, max_iter + 1), disable=not verbose)
         for i in pbar:
-            self.result_explanation['changed'] = self.explainer.pd(
-                self._X_changed, 
-                self._idv, 
-                self.result_explanation['grid']
-            )
+            if method == "pd":
+                self.result_explanation['changed'] = self.explainer.pd(
+                    self._X_changed, 
+                    self._idv, 
+                    self.result_explanation['grid']
+                )
+            elif method == "ale":
+                self.result_explanation['changed'] = self.explainer.ale(
+                    self._X_changed, 
+                    self._idv, 
+                    self.result_explanation['seg_num']
+                )
 
             gradient = self.calculate_gradient(self._X_changed)
             step = self.params['optimizer'].calculate_step(gradient)
@@ -85,12 +101,19 @@ class GradientAlgorithm(algorithm.Algorithm):
             pbar.set_description("Iter: %s || Loss: %s" % (i, self.iter_losses['loss'][-1]))
             if utils.check_early_stopping(self.iter_losses, self.params['epsilon'], self.params['stop_iter']):
                 break
-
-        self.result_explanation['changed'] = self.explainer.pd(
-            X=self._X_changed,
-            idv=self._idv,
-            grid=self.result_explanation['grid']
-        )
+        
+        if method == "pd":
+            self.result_explanation['changed'] = self.explainer.pd(
+                X=self._X_changed,
+                idv=self._idv,
+                grid=self.result_explanation['grid']
+            )
+        elif method == "ale":
+            self.result_explanation['changed'] = self.explainer.ale(
+                X=self._X_changed,
+                idv=self._idv,
+                grid=self.result_explanation['seg_num']
+            )
         _data_changed = pd.DataFrame(self._X_changed, columns=self.explainer.data.columns)
         self.result_data = pd.concat((self.explainer.data, _data_changed))\
             .reset_index(drop=True)\
@@ -106,12 +129,16 @@ class GradientAlgorithm(algorithm.Algorithm):
         max_iter=50,
         random_state=None,
         save_iter=False,
-        verbose=True
+        verbose=True,
+        method="pd",
+        seg_num=None
     ):
         super().fool_aim(
             target=target,
             grid=grid,
-            random_state=random_state
+            random_state=random_state,
+            method=method,
+            seg_num=seg_num
         )
         self.fool(
             grid=None,
@@ -119,7 +146,9 @@ class GradientAlgorithm(algorithm.Algorithm):
             random_state=random_state, 
             save_iter=save_iter, 
             verbose=verbose, 
-            aim=True
+            aim=True,
+            method=method,
+            seg_num=seg_num
         )
 
 
