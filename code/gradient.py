@@ -51,12 +51,11 @@ class GradientAlgorithm(algorithm.Algorithm):
         aim=False,
         center=None,
         method="pd",
-        seg_num=None
     ):
         self._aim = aim
         self._center = not aim if center is None else center
         if aim is False:
-            super().fool(grid=grid, random_state=random_state, method=method, seg_num=seg_num)
+            super().fool(grid=grid, random_state=random_state, method=method)
 
         # init algorithm
         self._initialize()
@@ -70,7 +69,7 @@ class GradientAlgorithm(algorithm.Algorithm):
             self.result_explanation['changed'] = self.explainer.ale(
                 self._X_changed, 
                 self._idv, 
-                self.result_explanation['seg_num']
+                self.result_explanation['grid']
             )
         self.append_losses(i=0)
         if save_iter:
@@ -88,7 +87,7 @@ class GradientAlgorithm(algorithm.Algorithm):
                 self.result_explanation['changed'] = self.explainer.ale(
                     self._X_changed, 
                     self._idv, 
-                    self.result_explanation['seg_num']
+                    self.result_explanation['grid']
                 )
 
             gradient = self.calculate_gradient(self._X_changed)
@@ -112,8 +111,9 @@ class GradientAlgorithm(algorithm.Algorithm):
             self.result_explanation['changed'] = self.explainer.ale(
                 X=self._X_changed,
                 idv=self._idv,
-                grid=self.result_explanation['seg_num']
+                grid=self.result_explanation['grid']
             )
+        print("RES: ", self.result_explanation['changed'])
         _data_changed = pd.DataFrame(self._X_changed, columns=self.explainer.data.columns)
         self.result_data = pd.concat((self.explainer.data, _data_changed))\
             .reset_index(drop=True)\
@@ -131,14 +131,12 @@ class GradientAlgorithm(algorithm.Algorithm):
         save_iter=False,
         verbose=True,
         method="pd",
-        seg_num=None
     ):
         super().fool_aim(
             target=target,
             grid=grid,
             random_state=random_state,
             method=method,
-            seg_num=seg_num
         )
         self.fool(
             grid=None,
@@ -148,7 +146,6 @@ class GradientAlgorithm(algorithm.Algorithm):
             verbose=verbose, 
             aim=True,
             method=method,
-            seg_num=seg_num
         )
 
 
@@ -159,7 +156,29 @@ class GradientAlgorithm(algorithm.Algorithm):
         grid_long = tf.tile(tf.convert_to_tensor(self.result_explanation['grid']), tf.convert_to_tensor([self._n]))
         data_long = GradientAlgorithm.assign(data_long, (slice(None, None), self._idv), grid_long.reshape(-1, 1))
         return tf.reshape(self.explainer.model(data_long), (self._n, self._n_grid_points)).mean(axis=0)
-    
+
+    # def calculate_ale(self, data_tensor):
+    #     data_sorted_ids = tf.argsort(data_tensor[:, self._idv])
+    #     data_sorted = tf.gather(data_tensor, data_sorted_ids, axis=0)
+
+    #     z_idx = tf.searchsorted(data_sorted[:, self._idv], self.result_explanation['grid'])
+    #     N = z_idx[1:] - z_idx[:-1]
+
+    #     grid_points = len(self.result_explanation['grid'])
+
+    #     y = tf.zeros((grid_points))
+
+    #     X_zk = data_sorted.identity()
+    #     X_zkm1 = data_sorted.identity()
+
+    #     for k in range(1, grid_points):
+    #         X_zk[z_idx[k-1]:z_idx[k], self._idv] = self.result_explanation['grid'][k]
+    #         X_zkm1[z_idx[k-1]:z_idx[k], self._idv] = self.result_explanation['grid'][k -1]
+        
+    #     diff = self.explainer.model(X_zk) - self.explainer.model(X_zkm1)
+    #     sums = tf.math.cumsum(diff)
+       
+        
     def calculate_loss(self, result):
         if self._aim:
             return tf.keras.losses.mean_squared_error(self.result_explanation['target'], result)
