@@ -66,5 +66,6 @@ else:
     alg.fool(max_iter=args.iter, random_state=args.seed, method=args.method)
 
 alg.plot_losses()
-alg.plot_explanation()
+title = "Partial Dependence" if args.method == "pd" else "Accumulated Local Effects"
+alg.plot_explanation(method=args.method, title=title)
 alg.plot_data(constant=False)
