@@ -166,21 +166,32 @@ class GradientAlgorithm(algorithm.Algorithm):
 
         grid_points = len(self.result_explanation['grid'])
 
-        X_zk = tf.Variable(data_sorted, trainable=True)
-        X_zkm1 = tf.Variable(data_sorted, trainable=True)
-        scaling_factors = tf.Variable(tf.zeros((data_tensor.shape[0], 1), dtype=tf.dtypes.float64), trainable=True)
+        y = tf.zeros(grid_points)
 
         for k in range(1, grid_points):
-            X_zk[z_idx[k-1]:z_idx[k], self._idv].assign(self.result_explanation['grid'][k])
 
-            X_zkm1[z_idx[k-1] : z_idx[k], self._idv].assign(self.result_explanation['grid'][k -1])
+            if N[k-1] == 0:
+                continue
 
-            scaling_factors[z_idx[k-1]:z_idx[k], 0].assign(0 if N[k-1] == 0 else 1/N[k-1])
-        
-        diff = (self.explainer.model(X_zk) - self.explainer.model(X_zkm1)) 
-        
-        sums = tf.math.cumsum(diff * scaling_factors)
-        y = sums[z_idx]
+            X_zk = tf.identity(data_sorted[z_idx[k-1] : z_idx[k], :])
+            X_zkm1 = tf.identity(data_sorted[z_idx[k-1] : z_idx[k], :])
+
+            X_zk = GradientAlgorithm.assign(
+                X_zk,
+                (slice(None, None), self._idv),
+                self.result_explanation['grid'][k]
+            )
+            X_zkm1 = GradientAlgorithm.assign(
+                X_zkm1,
+                (slice(None, None), self._idv),
+                self.result_explanation['grid'][k - 1]
+            )
+            scaling_factor = 1/N[k-1]
+
+            partial_res = tf.math.reduce_sum((self.explainer.model(X_zk) - self.explainer.model(X_zkm1))) * scaling_factor
+            y = GradientAlgorithm.assign(y, (k), partial_res)
+
+        y = tf.math.cumsum(y)
         return y
        
         
@@ -198,11 +209,12 @@ class GradientAlgorithm(algorithm.Algorithm):
                 explanation = self.calculate_pdp(input)
             elif method == "ale":
                 explanation = self.calculate_ale(input)
-            print("exp: ", explanation)
             loss = self.calculate_loss(explanation)
-            gradient = t.gradient(loss, input).numpy()
+            gradient = t.gradient(loss, input)
+            if isinstance(gradient, tf.IndexedSlices):
+                gradient = tf.convert_to_tensor(gradient)
         
-        return gradient
+        return gradient.numpy()
 
     def assign(tensor, slc, values):
         '''
@@ -210,10 +222,22 @@ class GradientAlgorithm(algorithm.Algorithm):
                 tensor[slc] = values
             this is a workaround
         '''
+
         mask = np.zeros_like(tensor.numpy())
         mask[slc] = 1
         mask = tf.convert_to_tensor(mask)
         return (1 - mask) * tensor + mask * values
+
+    def assign2(tensor, slc, values):
+        '''
+            Tensorflow can't do
+                tensor[slc] = values
+            this is a workaround
+        '''
+        var = tf.Variable(tensor, trainable=True)
+        with tf.control_dependencies([var[slc].assign(values)]):
+                new_tensor = tf.identity(var)
+        return new_tensor
 
     def _initialize(self):
         _X_std = self._X.std(axis=0) * 1/9
