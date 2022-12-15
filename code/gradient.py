@@ -90,7 +90,7 @@ class GradientAlgorithm(algorithm.Algorithm):
                     self.result_explanation['grid']
                 )
 
-            gradient = self.calculate_gradient(self._X_changed)
+            gradient = self.calculate_gradient(self._X_changed, method=method)
             step = self.params['optimizer'].calculate_step(gradient)
             self._X_changed -= self.params['learning_rate'] * step
 
@@ -157,26 +157,31 @@ class GradientAlgorithm(algorithm.Algorithm):
         data_long = GradientAlgorithm.assign(data_long, (slice(None, None), self._idv), grid_long.reshape(-1, 1))
         return tf.reshape(self.explainer.model(data_long), (self._n, self._n_grid_points)).mean(axis=0)
 
-    # def calculate_ale(self, data_tensor):
-    #     data_sorted_ids = tf.argsort(data_tensor[:, self._idv])
-    #     data_sorted = tf.gather(data_tensor, data_sorted_ids, axis=0)
+    def calculate_ale(self, data_tensor):
+        data_sorted_ids = tf.argsort(data_tensor[:, self._idv])
+        data_sorted = tf.gather(data_tensor, data_sorted_ids, axis=0)
 
-    #     z_idx = tf.searchsorted(data_sorted[:, self._idv], self.result_explanation['grid'])
-    #     N = z_idx[1:] - z_idx[:-1]
+        z_idx = tf.searchsorted(data_sorted[:, self._idv], self.result_explanation['grid'])
+        N = z_idx[1:] - z_idx[:-1]
 
-    #     grid_points = len(self.result_explanation['grid'])
+        grid_points = len(self.result_explanation['grid'])
 
-    #     y = tf.zeros((grid_points))
+        X_zk = tf.Variable(data_sorted, trainable=True)
+        X_zkm1 = tf.Variable(data_sorted, trainable=True)
+        scaling_factors = tf.Variable(tf.zeros((data_tensor.shape[0], 1), dtype=tf.dtypes.float64), trainable=True)
 
-    #     X_zk = data_sorted.identity()
-    #     X_zkm1 = data_sorted.identity()
+        for k in range(1, grid_points):
+            X_zk[z_idx[k-1]:z_idx[k], self._idv].assign(self.result_explanation['grid'][k])
 
-    #     for k in range(1, grid_points):
-    #         X_zk[z_idx[k-1]:z_idx[k], self._idv] = self.result_explanation['grid'][k]
-    #         X_zkm1[z_idx[k-1]:z_idx[k], self._idv] = self.result_explanation['grid'][k -1]
+            X_zkm1[z_idx[k-1] : z_idx[k], self._idv].assign(self.result_explanation['grid'][k -1])
+
+            scaling_factors[z_idx[k-1]:z_idx[k], 0].assign(0 if N[k-1] == 0 else 1/N[k-1])
         
-    #     diff = self.explainer.model(X_zk) - self.explainer.model(X_zkm1)
-    #     sums = tf.math.cumsum(diff)
+        diff = (self.explainer.model(X_zk) - self.explainer.model(X_zkm1)) 
+        
+        sums = tf.math.cumsum(diff * scaling_factors)
+        y = sums[z_idx]
+        return y
        
         
     def calculate_loss(self, result):
@@ -185,11 +190,15 @@ class GradientAlgorithm(algorithm.Algorithm):
         else:
             assert False, "Not implemented"
     
-    def calculate_gradient(self, data):
+    def calculate_gradient(self, data, method="pd"):
         input = tf.convert_to_tensor(data)
         with tf.GradientTape() as t:
             t.watch(input)
-            explanation = self.calculate_pdp(input)
+            if method == "pd":
+                explanation = self.calculate_pdp(input)
+            elif method == "ale":
+                explanation = self.calculate_ale(input)
+            print("exp: ", explanation)
             loss = self.calculate_loss(explanation)
             gradient = t.gradient(loss, input).numpy()
         
