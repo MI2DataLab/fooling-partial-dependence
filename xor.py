@@ -6,6 +6,9 @@
 
 
 import tensorflow as tf
+tf.experimental.numpy.experimental_enable_numpy_behavior(
+    prefer_float32=False
+)
 import argparse
 parser = argparse.ArgumentParser(description='main')
 parser.add_argument('--algorithm', default="gradient", type=str, help='algorithm type')
