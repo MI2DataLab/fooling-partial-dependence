@@ -11,7 +11,7 @@ parser.add_argument('--seed', default=0, type=int, help='random seed')
 args = parser.parse_args()
 VARIABLE = args.variable
 
-import code
+import src
 import numpy as np
 np.random.seed(args.seed)
 import pandas as pd
@@ -41,12 +41,12 @@ if VARIABLE == "age":
                     ("model", SVC(C=3, probability=True, random_state=args.seed))])
     clf.fit(X_train, y_train)
 
-    explainer = code.Explainer(clf, X_test)
+    explainer = src.Explainer(clf, X_test)
 
     VARIABLES_TO_CHANGE = [rename_dict['thalach'], rename_dict['trestbps']]
     CONSTANT = VARIABLES.difference(VARIABLES_TO_CHANGE).difference([VARIABLE])
 
-    alg = code.GeneticAlgorithm(
+    alg = src.GeneticAlgorithm(
         explainer, 
         variable=VARIABLE,
         constant=CONSTANT
@@ -58,7 +58,7 @@ if VARIABLE == "age":
     alg.plot_explanation(target=False)
     alg.plot_data(height=2,constant=False)
 
-    alg = code.GeneticAlgorithm(
+    alg = src.GeneticAlgorithm(
         explainer, 
         variable=VARIABLE,
         constant=CONSTANT
@@ -77,12 +77,12 @@ if VARIABLE == "sex":
                     ("model", SVC(C=5, probability=True, random_state=args.seed))])
     clf.fit(X_train, y_train)
 
-    explainer = code.Explainer(clf, X_train)
+    explainer = src.Explainer(clf, X_train)
 
     VARIABLES_TO_CHANGE = [rename_dict['thalach'], rename_dict['trestbps'], rename_dict['chol']]
     CONSTANT = VARIABLES.difference(VARIABLES_TO_CHANGE).difference([VARIABLE])
 
-    alg = code.GeneticAlgorithm(
+    alg = src.GeneticAlgorithm(
         explainer, 
         variable=VARIABLE,
         constant=CONSTANT,
@@ -96,7 +96,7 @@ if VARIABLE == "sex":
     alg.plot_explanation(categorical=True, target=False)
     alg.plot_data(height=2, constant=False)
 
-    alg = code.GeneticAlgorithm(
+    alg = src.GeneticAlgorithm(
         explainer, 
         variable=VARIABLE,
         constant=CONSTANT,

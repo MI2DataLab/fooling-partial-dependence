@@ -20,7 +20,7 @@ N = args.n
 SIZE = args.size
 tf.random.set_seed(args.seed)
 
-import code
+import src
 import numpy as np
 import pandas as pd
 
@@ -44,12 +44,12 @@ model.compile(loss='binary_crossentropy',
               metrics=['acc', 'AUC'])
 model.fit(X, y, batch_size=int(N/10), epochs=300, verbose=0)
 
-explainer = code.Explainer(model, X)
+explainer = src.Explainer(model, X)
 
 if args.algorithm == "gradient":
-    alg = code.GradientAlgorithm(explainer, variable="x1")
+    alg = src.GradientAlgorithm(explainer, variable="x1")
 else:
-    alg = code.GeneticAlgorithm(explainer, variable="x1", std_ratio=1/6)
+    alg = src.GeneticAlgorithm(explainer, variable="x1", std_ratio=1 / 6)
 
 if args.strategy == "target":
     alg.fool_aim(random_state=args.seed)

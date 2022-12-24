@@ -22,7 +22,7 @@ VARIABLE = args.variable
 tf.get_logger().setLevel('ERROR')
 tf.random.set_seed(args.seed)
 
-import code
+import src
 import numpy as np
 np.random.seed(args.seed)
 import pandas as pd
@@ -42,7 +42,7 @@ model.compile(loss='binary_crossentropy',
               optimizer=tf.keras.optimizers.Adam(),
               metrics=['acc', 'AUC'])
 model.fit(X, y, batch_size=32, epochs=50, verbose=1)
-explainer = code.Explainer(model, X)
+explainer = src.Explainer(model, X)
 
 VARIABLES = {
     'age', 'sex', 'cp', 'trestbps', 'chol', 'fbs',
@@ -53,7 +53,7 @@ CONSTANT = [
     'sex', 'cp', 'fbs', 'restecg', 'exang', 'slope', 'ca', 'thal'
 ]
 
-alg = code.GradientAlgorithm(
+alg = src.GradientAlgorithm(
     explainer, 
     variable=VARIABLE,
     constant=CONSTANT,
