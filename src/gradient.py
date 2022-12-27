@@ -140,10 +140,10 @@ class GradientAlgorithm(algorithm.Algorithm):
         )
         self.fool(
             grid=None,
-            max_iter=max_iter, 
-            random_state=random_state, 
-            save_iter=save_iter, 
-            verbose=verbose, 
+            max_iter=max_iter,
+            random_state=random_state,
+            save_iter=save_iter,
+            verbose=verbose,
             aim=True,
             method=method,
         )
