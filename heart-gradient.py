@@ -53,7 +53,7 @@ else:
         os.makedirs(args.models_path, exist_ok=True)
         model.save(args.models_path + "/" + args.save_model_as)
 
-explainer = src.Explainer(model, X)
+explainer = src.Explainer(model, X, y)
 
 VARIABLES = {
     'age', 'sex', 'cp', 'trestbps', 'chol', 'fbs',

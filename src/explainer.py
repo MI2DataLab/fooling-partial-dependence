@@ -3,18 +3,10 @@ import pandas as pd
 import warnings
 
 class Explainer:
-    def __init__(self, model, data, predict_function=None):
+    def __init__(self, model, data, labels, predict_function=None):
         self.model = model
-
-        if isinstance(data, pd.DataFrame):
-            self.data = data
-        elif isinstance(data, np.ndarray):
-            warnings.warn("`data` is a numpy.ndarray -> coercing to pandas.DataFrame.")
-            self.data = pd.DataFrame(data)
-        else:
-            raise TypeError(
-                "`data` is a " + str(type(data)) +
-                ", and it should be a pandas.DataFrame.")            
+        self.data = self._coerce_to_dataframe(data, "data")
+        self.labels = self._coerce_to_dataframe(labels, "labels")
 
         if predict_function:
             self.predict_function = predict_function
@@ -148,4 +140,12 @@ class Explainer:
         
         return y
 
-  
+    def _coerce_to_dataframe(self, data, variable_name):
+        if isinstance(data, pd.DataFrame):
+            return data
+        elif isinstance(data, np.ndarray):
+            warnings.warn(f"`{variable_name}` is a numpy.ndarray -> coercing to pandas.DataFrame.")
+            return pd.DataFrame(data)
+        else:
+            raise TypeError(
+                f"`{variable_name}` is a {str(type(data))}, and it should be a pandas.DataFrame.")

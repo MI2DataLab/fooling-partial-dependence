@@ -18,6 +18,7 @@ class Algorithm:
         self._n_grid_points = n_grid_points 
 
         self._X = explainer.data.values
+        self._y = explainer.labels.values
         self._n, self._p = self._X.shape
         self._idv = explainer.data.columns.get_loc(variable)
 
