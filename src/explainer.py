@@ -41,7 +41,7 @@ class Explainer:
                     )
             
         try:
-            pred = self.predict(data.values)
+            pred = self.predict(self.data.values)
         except:
             raise ValueError("`predict_function(model, data)` returns an error.")
         if not isinstance(pred, np.ndarray):
