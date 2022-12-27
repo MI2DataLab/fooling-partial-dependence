@@ -64,7 +64,7 @@ class Algorithm:
                 idv=self._idv,
                 grid=self.result_explanation['grid']
             )
-        elif method == "ale":
+        elif method == "ale" or method == "ale++":
             self.result_explanation['original'] = self.explainer.ale(
                 X=self._X,
                 idv=self._idv,

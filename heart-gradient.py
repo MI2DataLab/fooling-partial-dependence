@@ -80,3 +80,19 @@ alg.plot_losses()
 title = "Partial Dependence" if args.method == "pd" else "Accumulated Local Effects"
 alg.plot_explanation(method=args.method, title=title)
 alg.plot_data(constant=False)
+
+#----------------------- ale++ --------------------------
+
+X_changed = pd.DataFrame(data=alg._X_changed, columns=X.columns)
+explainer_alepp = src.Explainer(alg.explainer.model, X_changed, y)
+
+alg_alepp = src.GradientAlgorithm(
+    explainer_alepp,
+    variable=VARIABLE,
+    constant=CONSTANT,
+    learning_rate=0.01
+)
+
+alg_alepp.fool_acc(max_iter=args.iter)
+alg_alepp.plot_losses()
+alg_alepp.plot_explanation(method='ale++', title="ale++")

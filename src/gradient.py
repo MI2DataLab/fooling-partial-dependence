@@ -122,6 +122,56 @@ class GradientAlgorithm(algorithm.Algorithm):
                             .repeat(self._n).reset_index(drop=True))
 
 
+    def fool_acc(self, max_iter=None, verbose=True, grid=None,random_state=None, method="ale++"):
+        """
+        Function finetuning model weights for better accuracy, but preserving current ALE plot
+        """
+        super().fool(
+            grid=grid,
+            random_state=random_state,
+            method="ale++",
+        )
+
+        target = tf.convert_to_tensor(self.result_explanation['original'])
+        y = tf.convert_to_tensor(self._y, dtype=tf.float32)
+        loss = self.calculate_alepp_loss(self._X, y, target)
+        self.iter_losses['iter'].append(0)
+        self.iter_losses['loss'].append(loss)
+
+        self.explainer.model.evaluate(self._X, self._y)
+        optimizer = tf.keras.optimizers.Adam(learning_rate=self.params['learning_rate'])
+        pbar = tqdm.tqdm(range(1, max_iter + 1), disable=not verbose)
+        for i in pbar:
+            data = tf.convert_to_tensor(self._X)
+            target = tf.convert_to_tensor(self.result_explanation['original'])
+            labels = tf.convert_to_tensor(self._y, dtype=tf.float32)
+
+            with tf.GradientTape() as t:
+                t.watch(data)
+                t.watch(target)
+                t.watch(labels)
+
+                loss = self.calculate_alepp_loss(data, labels, target)
+                gradient = t.gradient(loss, self.explainer.model.trainable_weights)
+
+                if isinstance(gradient, tf.IndexedSlices):
+                    gradient = tf.convert_to_tensor(gradient)
+
+                optimizer.apply_gradients(zip(gradient, self.explainer.model.trainable_weights))
+                self.iter_losses['iter'].append(i)
+                self.iter_losses['loss'].append(loss)
+
+            pbar.set_description("Iter: %s || Loss: %s" % (i, self.iter_losses['loss'][-1]))
+            if utils.check_early_stopping(self.iter_losses, self.params['epsilon'], self.params['stop_iter']):
+                break
+
+        self.result_explanation['changed'] = self.explainer.ale(
+            self._X,
+            self._idv,
+            self.result_explanation['grid']
+        )
+        self.explainer.model.evaluate(self._X, self._y)
+
     def fool_aim(
         self,
         target="auto",
@@ -262,3 +312,11 @@ class GradientAlgorithm(algorithm.Algorithm):
 
     def append_explanations(self, i=0):
         self.iter_explanations[i] = self.result_explanation['changed']
+
+    def calculate_alepp_loss(self, data, y_orig, target):
+        y_pred = self.explainer.model(data)
+        bce = tf.keras.losses.BinaryCrossentropy()
+        bce_loss = bce(y_pred, y_orig)
+        explanation = self.calculate_ale(data)
+        mse_loss = tf.keras.losses.mean_squared_error(target, explanation)
+        return bce_loss + mse_loss
