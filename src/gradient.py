@@ -208,6 +208,8 @@ class GradientAlgorithm(algorithm.Algorithm):
         return tf.reshape(self.explainer.model(data_long), (self._n, self._n_grid_points)).mean(axis=0)
 
     def calculate_ale(self, data_tensor):
+        self.result_explanation['grid'][0] -= 0.000001
+        self.result_explanation['grid'][-1] += 0.000001
         data_sorted_ids = tf.argsort(data_tensor[:, self._idv])
         data_sorted = tf.gather(data_tensor, data_sorted_ids, axis=0)
 
@@ -216,35 +218,43 @@ class GradientAlgorithm(algorithm.Algorithm):
 
         grid_points = len(self.result_explanation['grid'])
 
+        lower = tf.repeat(self.result_explanation['grid'][:-1], N)
+        upper = tf.repeat(self.result_explanation['grid'][1:], N)
+
+        lower = tf.expand_dims(lower, axis=1)
+        upper = tf.expand_dims(upper, axis=1)
+
+        lower_data = GradientAlgorithm.assign(
+            data_sorted,
+            (slice(None, None), self._idv),
+            lower
+        )
+
+        upper_data = GradientAlgorithm.assign(
+            data_sorted,
+            (slice(None, None), self._idv),
+            upper
+        )
+        lower_pred = self.explainer.model(lower_data)
+        upper_pred = self.explainer.model(upper_data)
+
+        diff = upper_pred - lower_pred
         y = tf.zeros(grid_points)
 
         for k in range(1, grid_points):
-
-            if N[k-1] == 0:
+            if N[k - 1] == 0:
                 continue
+            segment_average = tf.math.reduce_mean(diff[z_idx[k - 1]: z_idx[k]])
 
-            X_zk = tf.identity(data_sorted[z_idx[k-1] : z_idx[k], :])
-            X_zkm1 = tf.identity(data_sorted[z_idx[k-1] : z_idx[k], :])
-
-            X_zk = GradientAlgorithm.assign(
-                X_zk,
-                (slice(None, None), self._idv),
-                self.result_explanation['grid'][k]
-            )
-            X_zkm1 = GradientAlgorithm.assign(
-                X_zkm1,
-                (slice(None, None), self._idv),
-                self.result_explanation['grid'][k - 1]
-            )
-            scaling_factor = 1/N[k-1]
-
-            partial_res = tf.math.reduce_sum((self.explainer.model(X_zk) - self.explainer.model(X_zkm1))) * scaling_factor
-            y = GradientAlgorithm.assign(y, (k), partial_res)
+            y = GradientAlgorithm.assign(y, (k), segment_average)
 
         y = tf.math.cumsum(y)
+        # N_with0 = tf.concat( [tf.zeros(1, dtype=tf.float32), tf.cast(N, tf.float32)], axis=0)
+        # tf.tensordot(y, N_with0,1) / data_sorted.shape[0]
+        # return y - tf.tensordot(y, N_with0,1) / data_sorted.shape[0]
         return y
-       
-        
+
+
     def calculate_loss(self, result):
         if self._aim:
             return tf.keras.losses.mean_squared_error(self.result_explanation['target'], result)
