@@ -122,7 +122,7 @@ class GradientAlgorithm(algorithm.Algorithm):
                             .repeat(self._n).reset_index(drop=True))
 
 
-    def fool_acc(self, max_iter=None, verbose=True, grid=None,random_state=None, method="ale++"):
+    def fool_acc(self, max_iter=None, verbose=True, grid=None,random_state=None, method="ale++", reg_factor=100):
         """
         Function finetuning model weights for better accuracy, but preserving current ALE plot
         """
@@ -134,7 +134,7 @@ class GradientAlgorithm(algorithm.Algorithm):
 
         target = tf.convert_to_tensor(self.result_explanation['original'])
         y = tf.convert_to_tensor(self._y, dtype=tf.float32)
-        loss = self.calculate_alepp_loss(self._X, y, target)
+        loss = self.calculate_alepp_loss(self._X, y, target, reg_factor)
         self.iter_losses['iter'].append(0)
         self.iter_losses['loss'].append(loss)
 
@@ -151,7 +151,7 @@ class GradientAlgorithm(algorithm.Algorithm):
                 t.watch(target)
                 t.watch(labels)
 
-                loss = self.calculate_alepp_loss(data, labels, target)
+                loss = self.calculate_alepp_loss(data, labels, target, reg_factor)
                 gradient = t.gradient(loss, self.explainer.model.trainable_weights)
 
                 if isinstance(gradient, tf.IndexedSlices):
@@ -322,10 +322,10 @@ class GradientAlgorithm(algorithm.Algorithm):
     def append_explanations(self, i=0):
         self.iter_explanations[i] = self.result_explanation['changed']
 
-    def calculate_alepp_loss(self, data, y_orig, target):
+    def calculate_alepp_loss(self, data, y_orig, target, reg_factor):
         y_pred = self.explainer.model(data)
         bce = tf.keras.losses.BinaryCrossentropy()
         bce_loss = bce(y_pred, y_orig)
         explanation = self.calculate_ale(data)
         mse_loss = tf.keras.losses.mean_squared_error(target, explanation)
-        return bce_loss + mse_loss
+        return bce_loss + reg_factor*mse_loss

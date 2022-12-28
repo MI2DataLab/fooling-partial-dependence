@@ -18,6 +18,7 @@ parser.add_argument('--method', default="pd", type=str, help='method: pd/ale')
 parser.add_argument('--load_model', default=None, type=str, help='name of previously trained model')
 parser.add_argument('--save_model_as', default=None, type=str, help='name of model to save')
 parser.add_argument('--models_path', default='models', type=str, help='dirname of models')
+parser.add_argument('--mse_regularization_factor', default=100, type=int, help='Regularization factor of MSE')
 args = parser.parse_args()
 
 VARIABLE = args.variable
@@ -94,6 +95,6 @@ alg_alepp = src.GradientAlgorithm(
     learning_rate=0.01
 )
 
-alg_alepp.fool_acc(max_iter=args.iter)
+alg_alepp.fool_acc(max_iter=args.iter, reg_factor=args.mse_regularization_factor)
 alg_alepp.plot_losses()
 alg_alepp.plot_explanation(method='ale++', title="ale++")
