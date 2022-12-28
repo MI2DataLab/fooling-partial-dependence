@@ -64,11 +64,12 @@ CONSTANT = [
     'sex', 'cp', 'fbs', 'restecg', 'exang', 'slope', 'ca', 'thal'
 ]
 
+lr = 0.1 if args.method == "pd" else 0.01
 alg = src.GradientAlgorithm(
     explainer, 
     variable=VARIABLE,
     constant=CONSTANT,
-    learning_rate=0.1
+    learning_rate=lr
 )
 
 if args.strategy == "target":

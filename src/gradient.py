@@ -240,7 +240,6 @@ class GradientAlgorithm(algorithm.Algorithm):
 
         diff = upper_pred - lower_pred
         y = tf.zeros(grid_points)
-
         for k in range(1, grid_points):
             if N[k - 1] == 0:
                 continue
