@@ -28,11 +28,11 @@ class Explainer:
                 else:
                     raise ValueError("Unknown estimator type: " + str(model._estimator_type) + ".")
             # tensorflow extraction
-            elif str(type(model)).startswith("<class 'tensorflow.python.keras.engine"):
+            elif str(type(model)).startswith("<class 'keras.engine."):
                 if model.output_shape[1] == 1:
-                    self.predict_function = lambda m, d: m.predict(np.array(d)).reshape(-1, )
+                    self.predict_function = lambda m, d: m.predict(np.array(d), verbose=False).reshape(-1, )
                 elif model.output_shape[1] == 2:
-                    self.predict_function = lambda m, d: m.predict(np.array(d))[:, 1]
+                    self.predict_function = lambda m, d: m.predict(np.array(d), verbose=False)[:, 1]
                 else:
                     warnings.warn("`model` predict output has shape greater than 2, predicting column 1.")   
             # default extraction
