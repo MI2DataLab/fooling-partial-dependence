@@ -68,13 +68,14 @@ class GeneticAlgorithm(algorithm.Algorithm):
         save_iter=False,
         verbose=True,
         aim=False,
-        center=None 
+        center=None,
+        method="pd",
     ):
         
         self._aim = aim
         self._center = not aim if center is None else center
         if aim is False:
-            super().fool(grid=grid, random_state=random_state)
+            super().fool(grid=grid, random_state=random_state, method=method)
             
         # init population
         self._X_pop = np.tile(self._X, (self.params['pop_count'], 1, 1))
@@ -95,12 +96,19 @@ class GeneticAlgorithm(algorithm.Algorithm):
             pbar.set_description("Iter: %s || Loss: %s" % (i, self.iter_losses['loss'][-1]))
             if utils.check_early_stopping(self.iter_losses, self.params['epsilon'], self.params['stop_iter']):
                 break
-
-        self.result_explanation['changed'] = self.explainer.pd(
-            self.get_best_data(), 
-            self._idv, 
-            self.result_explanation['grid']
-        )
+        
+        if method == "pd":
+            self.result_explanation['changed'] = self.explainer.pd(
+                self.get_best_data(), 
+                self._idv, 
+                self.result_explanation['grid']
+            )
+        else:
+            self.result_explanation['changed'] = self.explainer.ale(
+                self.get_best_data(), 
+                self._idv, 
+                self.result_explanation['grid']
+            )
 
         _data_changed = pd.DataFrame(self.get_best_data(), columns=self.explainer.data.columns)
         
@@ -117,12 +125,14 @@ class GeneticAlgorithm(algorithm.Algorithm):
             max_iter=50,
             random_state=None,
             save_iter=False,
-            verbose=True
+            verbose=True,
+            method="pd",
         ):
         super().fool_aim(
             target=target,
             grid=grid,
-            random_state=random_state
+            random_state=random_state,
+            method=method,
         )
         self.fool(
             grid=None,
@@ -130,7 +140,8 @@ class GeneticAlgorithm(algorithm.Algorithm):
             random_state=random_state, 
             save_iter=save_iter, 
             verbose=verbose, 
-            aim=True
+            aim=True,
+            method=method,
         )
             
 
@@ -191,12 +202,19 @@ class GeneticAlgorithm(algorithm.Algorithm):
             
         self._X_pop = np.concatenate((self._X_pop, _childs))
     
-    def evaluation(self):
-        self._E_pop = self.explainer.pd_pop(
-            X_pop=self._X_pop, 
-            idv=self._idv, 
-            grid=self.result_explanation['grid']
-        )
+    def evaluation(self, method="pd"):
+        if method == "pd":
+            self._E_pop = self.explainer.pd_pop(
+                X_pop=self._X_pop, 
+                idv=self._idv, 
+                grid=self.result_explanation['grid']
+            )
+        elif method == "ale":
+            self._E_pop = self.explainer.ale_pop(
+                X_pop=self._X_pop, 
+                idv=self._idv, 
+                grid=self.result_explanation['grid']
+            )
         self._L_pop = loss.loss_pop(
             original=self.result_explanation['target'] if self._aim else self.result_explanation['original'],
             changed=self._E_pop,

@@ -18,6 +18,7 @@ class Algorithm:
         self._n_grid_points = n_grid_points 
 
         self._X = explainer.data.values
+        self._y = explainer.labels.values
         self._n, self._p = self._X.shape
         self._idv = explainer.data.columns.get_loc(variable)
 
@@ -38,7 +39,8 @@ class Algorithm:
     def fool(
             self,
             grid=None,
-            random_state=None
+            random_state=None,
+            method="pd",
         ):
 
         if random_state is not None:
@@ -56,11 +58,18 @@ class Algorithm:
             self.result_explanation['grid'] = grid
             self._n_grid_points = len(grid)
 
-        self.result_explanation['original'] = self.explainer.pd(
-            X=self._X,
-            idv=self._idv,
-            grid=self.result_explanation['grid']
-        )
+        if method == "pd":
+            self.result_explanation['original'] = self.explainer.pd(
+                X=self._X,
+                idv=self._idv,
+                grid=self.result_explanation['grid']
+            )
+        elif method == "ale" or method == "ale++":
+            self.result_explanation['original'] = self.explainer.ale(
+                X=self._X,
+                idv=self._idv,
+                grid=self.result_explanation['grid']
+            )
 
         self.result_explanation['changed'] = np.zeros_like(self.result_explanation['grid'])
 
@@ -69,13 +78,15 @@ class Algorithm:
             self,
             target="auto",
             grid=None,
-            random_state=None
+            random_state=None,
+            method="pd",
         ):
 
         Algorithm.fool(
             self=self,
             grid=grid,
-            random_state=random_state
+            random_state=random_state,
+            method=method,
         )
         
         if target == "auto": # target = -(x - mean(x)) + mean(x)
@@ -98,7 +109,8 @@ class Algorithm:
             title="Partial Dependence",
             legend_loc=0,
             figsize=(9, 6), # 7.2, 4.8
-            savefig=None
+            savefig=None,
+            method="pd"
         ):
         plt.rcParams["legend.handlelength"] = 2
         plt.rcParams["figure.figsize"] = figsize
@@ -146,16 +158,28 @@ class Algorithm:
                 lw=lw
             )
             for i in range(n):
-                plt.plot(
-                    self.result_explanation['grid'],
-                    self.explainer.pd(
-                        self.get_best_data(i), 
-                        self._idv, 
-                        self.result_explanation['grid']
-                    ), 
-                    color=_colors[i], 
-                    lw=2
-                )
+                if method == "pd":
+                    plt.plot(
+                        self.result_explanation['grid'],
+                        self.explainer.pd(
+                            self.get_best_data(i), 
+                            self._idv, 
+                            self.result_explanation['grid']
+                        ), 
+                        color=_colors[i], 
+                        lw=2
+                    )
+                elif method == "ale":
+                    plt.plot(
+                        self.result_explanation['grid'],
+                        self.explainer.ale(
+                            self.get_best_data(i), 
+                            self._idv, 
+                            self.result_explanation['grid']
+                        ), 
+                        color=_colors[i], 
+                        lw=2
+                    )
             if target and self._aim:
                 plt.plot(
                     self.result_explanation['grid'],

@@ -3,18 +3,10 @@ import pandas as pd
 import warnings
 
 class Explainer:
-    def __init__(self, model, data, predict_function=None):
+    def __init__(self, model, data, labels, predict_function=None):
         self.model = model
-
-        if isinstance(data, pd.DataFrame):
-            self.data = data
-        elif isinstance(data, np.ndarray):
-            warnings.warn("`data` is a numpy.ndarray -> coercing to pandas.DataFrame.")
-            self.data = pd.DataFrame(data)
-        else:
-            raise TypeError(
-                "`data` is a " + str(type(data)) +
-                ", and it should be a pandas.DataFrame.")            
+        self.data = self._coerce_to_dataframe(data, "data")
+        self.labels = self._coerce_to_dataframe(labels, "labels")
 
         if predict_function:
             self.predict_function = predict_function
@@ -49,7 +41,7 @@ class Explainer:
                     )
             
         try:
-            pred = self.predict(data.values)
+            pred = self.predict(self.data.values)
         except:
             raise ValueError("`predict_function(model, data)` returns an error.")
         if not isinstance(pred, np.ndarray):
@@ -115,3 +107,45 @@ class Explainer:
         y = y_pop_long.mean(axis=1)
 
         return y
+    
+    def ale(self, X, idv, grid):
+        """
+        numpy implementation of ale calculation for 1 variable 
+        
+        takes:
+        X - np.ndarray (2d), data
+        idv - int, index of variable to calculate profile
+        
+        returns:
+        y - np.ndarray (1d), vector of pd profile values
+        """
+        X_sorted = X[X[:, idv].argsort()]
+        
+        grid_points = len(grid)
+
+        z_idx = np.searchsorted(X_sorted[:, idv], grid)
+        N = z_idx[1:] - z_idx[:-1]
+        
+        g = 0
+        y = np.zeros_like(grid)
+        for k in range(1, grid_points):
+            segment = X_sorted[z_idx[k-1]:z_idx[k], :]
+            X_zk = segment.copy()
+            X_zk[:, idv] = grid[k]
+            X_zkm1 = segment.copy()
+            X_zkm1[:, idv] = grid[k-1]
+            sum = np.sum(self.model(X_zk) - self.model(X_zkm1))
+            g = g if N[k-1] == 0 else g + sum / N[k-1]
+            y[k] = g
+        
+        return y
+
+    def _coerce_to_dataframe(self, data, variable_name):
+        if isinstance(data, pd.DataFrame):
+            return data
+        elif isinstance(data, np.ndarray):
+            warnings.warn(f"`{variable_name}` is a numpy.ndarray -> coercing to pandas.DataFrame.")
+            return pd.DataFrame(data)
+        else:
+            raise TypeError(
+                f"`{variable_name}` is a {str(type(data))}, and it should be a pandas.DataFrame.")
