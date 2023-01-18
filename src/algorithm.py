@@ -90,7 +90,10 @@ class Algorithm:
         )
         
         if target == "auto": # target = -(x - mean(x)) + mean(x)
-            self.result_explanation['target'] = np.mean(self.result_explanation['original']) -\
+            if method == "ale":
+                self.result_explanation['target'] = -self.result_explanation['original']
+            else:
+                self.result_explanation['target'] = np.mean(self.result_explanation['original']) -\
                  (self.result_explanation['original'] - np.mean(self.result_explanation['original']))
         elif isinstance(target, np.ndarray):
             self.result_explanation['target'] = target
@@ -110,7 +113,8 @@ class Algorithm:
             legend_loc=0,
             figsize=(9, 6), # 7.2, 4.8
             savefig=None,
-            method="pd"
+            method="pd",
+            X_changed=None,
         ):
         plt.rcParams["legend.handlelength"] = 2
         plt.rcParams["figure.figsize"] = figsize
@@ -222,11 +226,11 @@ class Algorithm:
             ax.savefig(savefig, bbox_inches='tight')
         plt.show()
 
-    def plot_losses(self, lw=3, figsize=(9, 6), savefig=None):
+    def plot_losses(self, lw=3, figsize=(9, 6), savefig=None, loss='loss'):
         plt.rcParams["figure.figsize"] = figsize
         plt.plot(
             self.iter_losses['iter'], 
-            self.iter_losses['loss'], 
+            self.iter_losses[loss], 
             color='#000000', 
             lw=lw
         )

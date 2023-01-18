@@ -18,7 +18,7 @@ parser.add_argument('--method', default="ale", type=str, help='method: pd/ale')
 parser.add_argument('--load_model', default=None, type=str, help='name of previously trained model')
 parser.add_argument('--save_model_as', default=None, type=str, help='name of model to save')
 parser.add_argument('--models_path', default='models', type=str, help='dirname of models')
-parser.add_argument('--mse_regularization_factor', default=100, type=int, help='Regularization factor of MSE')
+parser.add_argument('--mse_regularization_factor', default=100, type=float, help='Regularization factor of MSE')
 parser.add_argument('--alepp_loss_funcion', default="bce", type=str, help='loss function bce/mse')
 args = parser.parse_args()
 
@@ -80,25 +80,24 @@ if args.strategy == "target":
 else:
     alg.fool(max_iter=args.iter, random_state=args.seed, method=args.method)
 
-
-print( alg.explainer.model(X[:20]) )
 alg.plot_losses()
 title = "Partial Dependence" if args.method == "pd" else "Accumulated Local Effects"
 alg.plot_explanation(method=args.method, title=title)
-alg.plot_data(constant=False)
+# alg.plot_data(constant=False)
 
 #----------------------- ale++ --------------------------
 
 X_changed = pd.DataFrame(data=alg._X_changed, columns=X.columns)
-explainer_alepp = src.Explainer(alg.explainer.model, X_changed, y)
+orig_explainer = src.Explainer(alg.explainer.model, X, y)
+changed_explainer = src.Explainer(alg.explainer.model, X_changed, y)
 
 alg_alepp = src.GradientAlgorithm(
-    explainer_alepp,
+    orig_explainer,
     variable=VARIABLE,
     constant=CONSTANT,
     learning_rate=0.5
 )
 
-alg_alepp.fool_acc(max_iter=args.iter, reg_factor=args.mse_regularization_factor)
-alg_alepp.plot_losses()
+alg_alepp.fool_acc(max_iter=args.iter, reg_factor=args.mse_regularization_factor, X_changed=alg._X_changed)
+alg_alepp.plot_losses(loss='raw_loss')
 alg_alepp.plot_explanation(method='ale++', title="ale++")
