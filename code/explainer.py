@@ -3,6 +3,7 @@ import tensorflow as tf
 from copy import deepcopy
 import pandas as pd
 import warnings
+import dalex as dx
 
 
 class Explainer:
@@ -200,6 +201,14 @@ class Explainer:
         z = deepcopy(y)
         z = np.append(z, [z[-1]]) - c
 
+        return z
+
+    def ale_dalex(self, X, idv, grid):
+        explainer = dx.Explainer(self.model, X, predict_function=self.predict_function)
+        variable_name = str(idv)
+        ale = explainer.model_profile(type="ale", variables=[variable_name], variable_splits={variable_name: grid},
+            N=len(X), random_state=1, center=False)
+        z = ale.result._yhat_
         return z
 
 

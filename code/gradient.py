@@ -141,6 +141,10 @@ class GradientAlgorithm(algorithm.Algorithm):
             X=self._X_changed, idv=self._idv, grid=result_explanation["grid"]
         )
 
+        self.result_explanations["ale_dalex"]["changed"] = self.explainer.ale_dalex(
+            X=self._X_changed, idv=self._idv, grid=result_explanation["grid"]
+        )
+
         # TODO check where this is used
         self.result_data[explanation_name] = (
             pd.concat((self.explainer.original_data, _data_changed))
@@ -317,7 +321,8 @@ class GradientAlgorithm(algorithm.Algorithm):
         
         df.loc[len(df.index)] = new_row
         print(df)
-        df.to_csv(all_results_csv, mode='a', header=True)
+        header = not os.path.isfile(all_results_csv) 
+        df.to_csv(all_results_csv, mode='a', header=header)
         print(output_str)
         if save_path:
             with open(save_path + "metrics.txt", "w") as text_file:

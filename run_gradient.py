@@ -37,6 +37,8 @@ def arguments() -> Namespace:
     parser.add_argument(
         "--lr", default=0.1, type=float, help="learning rate for gradient algorithm"
     )
+    parser.add_argument("--n", default=320, type=int, help="number of observations")
+
     parser.add_argument(
         "--size", default=128, type=int, help="number of neurons in layers"
     )
@@ -110,7 +112,7 @@ if __name__ == "__main__":
         variable=args.variable,
         constant=CONSTANT,
         learning_rate=args.lr,
-        explanation_names=args.explanations,
+        explanation_names=["pd", "ale", "ale_dalex"],
     )
 
     if args.strategy == "target":

@@ -12,7 +12,7 @@ class Algorithm:
         variable,
         constant=None,
         n_grid_points=21,
-        explanation_names=["pd", "ale"],
+        explanation_names=["pd", "ale", "ale_dalex"],
     ):
 
         self.explainer = explainer
