@@ -35,13 +35,15 @@ class Algorithm:
 
         self.result_explanations, self.iter_explanations = {}, {}
         for name in explanation_names:
+        # for name in ("pd", ):
             self.result_explanations[name] = {
                 "grid": None,
                 "original": None,
                 "changed": None,
             }
-            self.iter_losses["loss"][name] = []
-            self.iter_explanations[name] = {}
+
+        self.iter_losses["loss"]["pd"] = []
+        self.iter_explanations["pd"] = {}
 
         self.result_data = {}
 
@@ -268,7 +270,8 @@ class Algorithm:
             plt.show()
 
     def plot_data(self, i=0, constant=True, height=2, savefig=None):
-        for explanation_name in self.result_explanations.keys():
+        # for explanation_name in self.result_explanations.keys():
+        for explanation_name in ("pd", ):
             plt.rcParams["legend.handlelength"] = 0.1
             _colors = sns.color_palette("Set1").as_hex()[0:2][::-1]
             if i == 0:

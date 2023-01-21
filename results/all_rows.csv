@@ -1,0 +1,2 @@
+,name,path,variable,size,seed,lr,iter,ale_l2,ale_l1,ale_max_diff,ale_rho,pd_l2,pd_l1,pd_max_diff,pd_rho
+0,heart,results/heart/age_128_0_gradient_0.1_50/metrics,age,128,0,0.1,50,0.00038576155506360265,0.015220728582929718,0.044634205104386815,-0.5552665799739922,0.00092720106,0.026514325,0.056414664,-0.9935064935064933

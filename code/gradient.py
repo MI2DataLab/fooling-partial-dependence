@@ -66,82 +66,92 @@ class GradientAlgorithm(algorithm.Algorithm):
         self._center = not aim if center is None else center
         self._result_data = {}
 
-        for j, (explanation_name, result_explanation) in enumerate(
-            zip(self.result_explanations.keys(), self.result_explanations.values())
-        ):
-            if aim is False:
-                super().fool(grid=grid, random_state=random_state)
+        # for j, (explanation_name, result_explanation) in enumerate(
+        #     zip(self.result_explanations.keys(), self.result_explanations.values())
+        # ):
+        j = 0
+        explanation_name = "pd"
+        result_explanation = self.result_explanations[explanation_name]
 
-            # init algorithm
-            self._initialize()
-            explanation_func = getattr(self.explainer, explanation_name)
+        if aim is False:
+            super().fool(grid=grid, random_state=random_state)
 
+        # init algorithm
+        self._initialize()
+        explanation_func = getattr(self.explainer, explanation_name)
+
+        result_explanation["changed"] = explanation_func(
+            self._X_changed, self._idv, result_explanation["grid"]
+        )
+
+        if j > 0:
+            self.append_losses(explanation_name)
+        else:
+            self.append_losses(explanation_name, i=0)
+        if save_iter:
+            self.append_explanations(explanation_name, i=0)
+
+        pbar = tqdm.tqdm(range(1, max_iter + 1), disable=not verbose)
+        for i in pbar:
+            # gradient of output w.r.t input
+            _ = self._calculate_gradient(self._X_changed)
+            d_output_input_long = self._calculate_gradient_long(
+                result_explanation, self._X_changed
+            )
             result_explanation["changed"] = explanation_func(
                 self._X_changed, self._idv, result_explanation["grid"]
             )
+            d_loss = self._calculate_gradient_loss(
+                result_explanation, d_output_input_long
+            )
+            step = self.params["optimizer"].calculate_step(d_loss)
+            self._X_changed -= self.params["learning_rate"] * step
 
             if j > 0:
                 self.append_losses(explanation_name)
             else:
-                self.append_losses(explanation_name, i=0)
+                self.append_losses(explanation_name, i=i)
             if save_iter:
-                self.append_explanations(explanation_name, i=0)
-
-            pbar = tqdm.tqdm(range(1, max_iter + 1), disable=not verbose)
-            for i in pbar:
-                # gradient of output w.r.t input
-                _ = self._calculate_gradient(self._X_changed)
-                d_output_input_long = self._calculate_gradient_long(
-                    result_explanation, self._X_changed
-                )
-                result_explanation["changed"] = explanation_func(
-                    self._X_changed, self._idv, result_explanation["grid"]
-                )
-                d_loss = self._calculate_gradient_loss(
-                    result_explanation, d_output_input_long
-                )
-                step = self.params["optimizer"].calculate_step(d_loss)
-                self._X_changed -= self.params["learning_rate"] * step
-
-                if j > 0:
-                    self.append_losses(explanation_name)
-                else:
-                    self.append_losses(explanation_name, i=i)
-                if save_iter:
-                    self.append_explanations(explanation_name, i=i)
-                pbar.set_description(
-                    "Iter: %s || Loss: %s"
-                    % (i, self.iter_losses["loss"][explanation_name][-1])
-                )
-                if utils.check_early_stopping(
-                    self.iter_losses, self.params["epsilon"], self.params["stop_iter"]
-                ):
-                    break
-
-            result_explanation["changed"] = explanation_func(
-                X=self._X_changed, idv=self._idv, grid=result_explanation["grid"]
+                self.append_explanations(explanation_name, i=i)
+            pbar.set_description(
+                "Iter: %s || Loss: %s"
+                % (i, self.iter_losses["loss"][explanation_name][-1])
             )
+            if utils.check_early_stopping(
+                self.iter_losses, self.params["epsilon"], self.params["stop_iter"]
+            ):
+                break
 
-            # self.result_data[explanation_name] = self._X_changed
-            _X_changed = deepcopy(self._X_changed)
-            # if self.explainer.constrain:
-            #     for i in range(_X_changed.shape[1]):
-            #         _X_changed[:,i] = sigmoid(_X_changed[:,i])
-            #         _X_changed[:,i] = self.explainer.unnormalizator[i](_X_changed[:,i])
+        result_explanation["changed"] = explanation_func(
+            X=self._X_changed, idv=self._idv, grid=result_explanation["grid"]
+        )
 
-            _data_changed = pd.DataFrame(
-                _X_changed, columns=self.explainer.data.columns
-            )
-            self.result_data[explanation_name] = (
-                pd.concat((self.explainer.original_data, _data_changed))
+        # self.result_data[explanation_name] = self._X_changed
+        _X_changed = deepcopy(self._X_changed)
+        # if self.explainer.constrain:
+        #     for i in range(_X_changed.shape[1]):
+        #         _X_changed[:,i] = sigmoid(_X_changed[:,i])
+        #         _X_changed[:,i] = self.explainer.unnormalizator[i](_X_changed[:,i])
+
+        _data_changed = pd.DataFrame(
+            _X_changed, columns=self.explainer.data.columns
+        )
+
+        self.result_explanations["ale"]["changed"] = self.explainer.ale(
+            X=self._X_changed, idv=self._idv, grid=result_explanation["grid"]
+        )
+
+        # TODO check where this is used
+        self.result_data[explanation_name] = (
+            pd.concat((self.explainer.original_data, _data_changed))
+            .reset_index(drop=True)
+            .rename(index={"0": "original", "1": "changed"})
+            .assign(
+                dataset=pd.Series(["original", "changed"])
+                .repeat(self._n)
                 .reset_index(drop=True)
-                .rename(index={"0": "original", "1": "changed"})
-                .assign(
-                    dataset=pd.Series(["original", "changed"])
-                    .repeat(self._n)
-                    .reset_index(drop=True)
-                )
             )
+        )
 
     def fool_aim(
         self,
@@ -256,51 +266,31 @@ class GradientAlgorithm(algorithm.Algorithm):
             explanation_name
         ]["changed"]
 
-    def get_metrics(self, save_path=None):
+    def get_metrics(self, args, save_path=None, all_results_csv="results/all_rows.csv"):
         output_str = ""
         df = pd.DataFrame(
             columns=[
-                "Name",
-                "ALE L2",
-                "ALE L1",
-                "ALE max diff",
-                "ALE Spearman rho",
-                "PD L2",
-                "PD L1",
-                "PD max diff",
-                "PD Spearman rho",
-                "PD optimised on ALE L2",
-                "PD optimised on ALE L1",
-                "PD optimised on ALE max diff",
-                "PD optimised on ALE Spearman rho",
-                "ALE optimised on PD L2",
-                "ALE optimised on PD L1",
-                "ALE optimised on PD max diff",
-                "ALE optimised on PD Spearman rho",
+                "name",
+                "path",
+                "variable",
+                "size",
+                "seed",
+                "lr",
+                "iter",
+                "ale_l2",
+                "ale_l1",
+                "ale_max_diff",
+                "ale_rho",
+                "pd_l2",
+                "pd_l1",
+                "pd_max_diff",
+                "pd_rho",
             ]
         )
-        names = ("ALE", "PD", "PD optimised on ALE", "ALE optimised on PD")
+        names = ("ALE", "PD")
         expls = [self.result_explanations["ale"], self.result_explanations["pd"]]
-        for explanation_name in ("ale", "pd"):
-            other_name = "ale" if explanation_name == "pd" else "pd"
-            other_explanation_func = getattr(self.explainer, other_name)
-            data = self.result_data[explanation_name]
-            grid = self.result_explanations[explanation_name]["grid"]
-            result_explanation = {"grid": grid}
 
-            for key in ("original", "changed"):
-                data_ = data[data.dataset == key].drop("dataset", axis=1).to_numpy()
-                result_explanation[key] = other_explanation_func(
-                    X=data_, idv=self._idv, grid=grid
-                )
-
-            result_explanation["target"] = self.result_explanations[other_name][
-                "target"
-            ]
-            expls.append(result_explanation)
-
-        name = save_path.split("/")
-        new_row = [os.path.join(name[1], name[2])]
+        new_row = [args.name, save_path, args.variable, args.size, args.seed, args.lr, args.iter]
         for name, explanation in zip(names, expls):
             _loss = loss.loss(
                 original=explanation["original"],
@@ -326,7 +316,7 @@ class GradientAlgorithm(algorithm.Algorithm):
         
         df.loc[len(df.index)] = new_row
         print(df)
-        df.to_csv(save_path + ".csv", index=None)
+        df.to_csv(all_results_csv, mode='a', header=False)
         print(output_str)
         if save_path:
             with open(save_path + ".txt", "w") as text_file:
