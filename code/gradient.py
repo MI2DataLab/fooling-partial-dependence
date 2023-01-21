@@ -277,6 +277,7 @@ class GradientAlgorithm(algorithm.Algorithm):
                 "seed",
                 "lr",
                 "iter",
+                "constrain",
                 "ale_l2",
                 "ale_l1",
                 "ale_max_diff",
@@ -290,7 +291,7 @@ class GradientAlgorithm(algorithm.Algorithm):
         names = ("ALE", "PD")
         expls = [self.result_explanations["ale"], self.result_explanations["pd"]]
 
-        new_row = [args.name, save_path, args.variable, args.size, args.seed, args.lr, args.iter]
+        new_row = [args.name, save_path, args.variable, args.size, args.seed, args.lr, args.iter, args.constrain]
         for name, explanation in zip(names, expls):
             _loss = loss.loss(
                 original=explanation["original"],
@@ -316,8 +317,8 @@ class GradientAlgorithm(algorithm.Algorithm):
         
         df.loc[len(df.index)] = new_row
         print(df)
-        df.to_csv(all_results_csv, mode='a', header=False)
+        df.to_csv(all_results_csv, mode='a', header=True)
         print(output_str)
         if save_path:
-            with open(save_path + ".txt", "w") as text_file:
+            with open(save_path + "metrics.txt", "w") as text_file:
                 text_file.write(output_str)

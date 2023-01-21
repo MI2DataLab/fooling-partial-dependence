@@ -26,7 +26,6 @@ VARIABLES = {
     "ca",
     "thal",
 }
-CONSTANT = ["sex", "cp", "fbs", "restecg", "exang", "slope", "ca", "thal"]
 
 
 def arguments() -> Namespace:
@@ -60,6 +59,26 @@ def arguments() -> Namespace:
     args = parser.parse_args()
     return args
 
+def get_dataset(name):
+    # this is a series of elifs because my Python is too old for match-case
+    if name == "heart":
+        df = pd.read_csv("data/heart.csv")
+        X, y = df.drop("target", axis=1), df.target.values
+        CONSTANT = ["sex", "cp", "fbs", "restecg", "exang", "slope", "ca", "thal"]
+
+    elif name == "xor":
+        x1 = np.random.normal(size=args.n)
+        x2 = np.random.normal(size=args.n)
+        x3 = np.random.normal(size=args.n)
+        y = 1 * (x1 * x2 * x3 > 0)
+        X = pd.DataFrame({"x1": x1, "x2": x2, "x3": x3})
+        CONSTANT = []
+
+    else:
+        raise NotImplementedError("Dataset name not found")
+
+    return X, y, CONSTANT
+
 
 if __name__ == "__main__":
     args = arguments()
@@ -67,8 +86,7 @@ if __name__ == "__main__":
     tf.get_logger().setLevel("ERROR")
     tf.random.set_seed(args.seed)
 
-    df = pd.read_csv("data/heart.csv")
-    X, y = df.drop("target", axis=1), df.target.values
+    X, y, CONSTANT = get_dataset(args.name)
 
     normalizer = tf.keras.layers.experimental.preprocessing.Normalization()
     normalizer.adapt(X)
@@ -108,4 +126,4 @@ if __name__ == "__main__":
     alg.plot_losses(savefig=f"{BASE_DIR}/loss")
     alg.plot_explanation(savefig=f"{BASE_DIR}/expl")
     alg.plot_data(constant=False, savefig=BASE_DIR)
-    alg.get_metrics(args, f"{BASE_DIR}/metrics")
+    alg.get_metrics(args, f"{BASE_DIR}/")
