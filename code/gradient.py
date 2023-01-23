@@ -313,7 +313,7 @@ class GradientAlgorithm(algorithm.Algorithm):
             )
             output_str += f"{name} Spearman rho: {spearman_r}\n"
 
-            new_row.extend([_loss, l1, max_diff, spearman_r])
+            new_row.extend([l2, l1, max_diff, spearman_r])
         
         df.loc[len(df.index)] = new_row
         print(df)
