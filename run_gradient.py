@@ -112,7 +112,9 @@ if __name__ == "__main__":
         variable=args.variable,
         constant=CONSTANT,
         learning_rate=args.lr,
-        explanation_names=["pd", "ale", "ale_dalex"],
+        # explanation_names=["pd", "ale", "ale_dalex", "pd_tf"],
+        explanation_names=["pd", "ale", "pd_tf"],
+
     )
 
     if args.strategy == "target":

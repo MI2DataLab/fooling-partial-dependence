@@ -70,7 +70,7 @@ class GradientAlgorithm(algorithm.Algorithm):
         #     zip(self.result_explanations.keys(), self.result_explanations.values())
         # ):
         j = 0
-        explanation_name = "pd"
+        explanation_name = "pd_tf"
         result_explanation = self.result_explanations[explanation_name]
 
         if aim is False:
@@ -104,10 +104,8 @@ class GradientAlgorithm(algorithm.Algorithm):
                 result_explanation, d_output_input_long
             )
             loss_tf = self._calculate_gradient_tf(self._X_changed)
-            # print(d_loss[0])
-            # print(loss_tf[0])
-            # print(d_loss[1])
-            # print(loss_tf[1])
+            print(d_loss[0])
+            print(loss_tf[0])
             # assert False
             step = self.params["optimizer"].calculate_step(loss_tf)
             self._X_changed -= self.params["learning_rate"] * step
@@ -146,9 +144,15 @@ class GradientAlgorithm(algorithm.Algorithm):
             X=self._X_changed, idv=self._idv, grid=result_explanation["grid"]
         )
 
-        self.result_explanations["ale_dalex"]["changed"] = self.explainer.ale_dalex(
+        # self.result_explanations["ale_dalex"]["changed"] = self.explainer.ale_dalex(
+        #     X=self._X_changed, idv=self._idv, grid=result_explanation["grid"]
+        # )
+
+        self.result_explanations["pd"]["changed"] = self.explainer.pd(
             X=self._X_changed, idv=self._idv, grid=result_explanation["grid"]
         )
+
+        
 
         self.result_data[explanation_name] = (
             pd.concat((self.explainer.original_data, _data_changed))
@@ -225,7 +229,7 @@ class GradientAlgorithm(algorithm.Algorithm):
             d_loss = (
                 d
                 * (
-                    result_explanation["changed"] - result_explanation["target"]
+                    result_explanation["changed"].numpy() - result_explanation["target"].numpy()
                 ).reshape(1, -1, 1)
             ).mean(axis=1)
         else:
@@ -268,7 +272,7 @@ class GradientAlgorithm(algorithm.Algorithm):
     #:# helper
 
     def append_losses(self, explanation_name, i=None):
-        _loss = loss.loss(
+        _loss = loss.loss_tf(
             original=self.result_explanations[explanation_name]["target"]
             if self._aim
             else self.result_explanations[explanation_name]["original"],

@@ -12,7 +12,7 @@ class Algorithm:
         variable,
         constant=None,
         n_grid_points=21,
-        explanation_names=["pd", "ale", "ale_dalex"],
+        explanation_names=["pd", "ale", "ale_dalex", "pd_tf"],
     ):
 
         self.explainer = explainer
@@ -43,6 +43,8 @@ class Algorithm:
             }
 
         self.iter_losses["loss"]["pd"] = []
+        self.iter_losses["loss"]["pd_tf"] = []
+
         self.iter_explanations["pd"] = {}
 
         self.result_data = {}
@@ -83,7 +85,10 @@ class Algorithm:
                 grid=result_explanation["grid"],
             )
 
+
             result_explanation["changed"] = np.zeros_like(result_explanation["grid"])
+
+        # assert False
 
     def fool_aim(self, target="auto", grid=None, random_state=None):
 
@@ -123,7 +128,8 @@ class Algorithm:
         for explanation_name, result_explanation in zip(
             self.result_explanations.keys(), self.result_explanations.values()
         ):
-            # print(result_explanation)
+            print(explanation_name)
+            print(result_explanation["changed"])
             # assert False
             if n == 1:
                 if categorical:
@@ -271,7 +277,7 @@ class Algorithm:
 
     def plot_data(self, i=0, constant=True, height=2, savefig=None):
         # for explanation_name in self.result_explanations.keys():
-        for explanation_name in ("pd", ):
+        for explanation_name in ("pd_tf", ):
             plt.rcParams["legend.handlelength"] = 0.1
             _colors = sns.color_palette("Set1").as_hex()[0:2][::-1]
             if i == 0:
@@ -303,7 +309,8 @@ class Algorithm:
             plt.show()
 
     def plot_losses(self, lw=3, figsize=(9, 6), savefig=None):
-        for explanation_name in self.iter_losses["loss"].keys():
+        # for explanation_name in self.iter_losses["loss"].keys():
+        for explanation_name in ("pd_tf", ):
             plt.rcParams["figure.figsize"] = figsize
             plt.plot(
                 self.iter_losses["iter"],

@@ -15,7 +15,7 @@ def loss(original, changed, aim=False, center=True):
 
 def loss_tf(original, changed, aim=False, center=True):
     if aim:  # original is target
-        return tf.reduce_mean((original - tf.reduce_mean(changed)) ** 2)
+        return tf.reduce_mean((original - changed) ** 2)
     else:
         if center:
             return -tf.reduce_mean(

@@ -123,19 +123,25 @@ class Explainer:
         returns:
         y - np.ndarray (1d), vector of pd profile values
         """
-
+        # print("NP")
         grid_points = len(grid)
+        # print(grid_points)
+
         # take grid_points of each observation in X
         X_long = np.repeat(X, grid_points, axis=0)
+        # print(X_long[0])
         # take grid for each observation
         grid_long = np.tile(grid.reshape((-1, 1)), (X.shape[0], 1))
+        # print(grid_long[0])
         # merge X and grid in long format
         X_long[:, [idv]] = grid_long
+        # print(X_long[0])
         # calculate ceteris paribus
         y_long = self.predict(X_long)
+        # print(y_long[:10])
         # calculate partial dependence
         y = y_long.reshape(X.shape[0], grid_points).mean(axis=0)
-
+        # print(y)
         return y
 
 
@@ -144,20 +150,27 @@ class Explainer:
         """
         TensorFlow implementation of pd calculation for 1 variable
         """
+        # print("TF")
         grid_points = len(grid)
+        # print(grid_points)
         # take grid_points of each observation in X
         X_long = tf.repeat(X, grid_points, axis=0)
+        # print(X_long[0])
         # take grid for each observation
         grid_long = tf.tile(tf.reshape(grid, [-1, 1]), [X.shape[0], 1])
         grid_long = tf.cast(grid_long, X.dtype)
+        # print(grid_long[0])
+
         # merge X and grid in long format
         indices = [[i, idv] for i in range(X_long.shape[0])]
         X_long = tf.tensor_scatter_nd_update(X_long, indices, tf.reshape(grid_long, [-1]))
+        # print(X_long[0])
         # calculate ceteris paribus
         y_long = self.model(X_long)
+        # print(y_long[:10, :])
         # calculate partial dependence
         y = tf.reduce_mean(tf.reshape(y_long, [X.shape[0], grid_points]), axis=0)
-
+        # print(y)
         return y
 
 
