@@ -94,7 +94,6 @@ class GradientAlgorithm(algorithm.Algorithm):
         pbar = tqdm.tqdm(range(1, max_iter + 1), disable=not verbose)
         for i in pbar:
             # gradient of output w.r.t input
-            _ = self._calculate_gradient(self._X_changed)
             d_output_input_long = self._calculate_gradient_long(
                 result_explanation, self._X_changed
             )
@@ -104,7 +103,13 @@ class GradientAlgorithm(algorithm.Algorithm):
             d_loss = self._calculate_gradient_loss(
                 result_explanation, d_output_input_long
             )
-            step = self.params["optimizer"].calculate_step(d_loss)
+            loss_tf = self._calculate_gradient_tf(self._X_changed)
+            # print(d_loss[0])
+            # print(loss_tf[0])
+            # print(d_loss[1])
+            # print(loss_tf[1])
+            # assert False
+            step = self.params["optimizer"].calculate_step(loss_tf)
             self._X_changed -= self.params["learning_rate"] * step
 
             if j > 0:
@@ -145,7 +150,6 @@ class GradientAlgorithm(algorithm.Algorithm):
             X=self._X_changed, idv=self._idv, grid=result_explanation["grid"]
         )
 
-        # TODO check where this is used
         self.result_data[explanation_name] = (
             pd.concat((self.explainer.original_data, _data_changed))
             .reset_index(drop=True)
@@ -177,6 +181,17 @@ class GradientAlgorithm(algorithm.Algorithm):
         )
 
     #:# inside
+
+    def _calculate_gradient_tf(self, data):
+        # gradient of output w.r.t input
+        input = tf.convert_to_tensor(data)
+
+        with tf.GradientTape() as t:
+            t.watch(input)
+            explanation = self.explainer.pd_tf(X=input, idv=self._idv, grid=self.result_explanations["pd"]["grid"])
+            loss = loss.loss_tf(self.result_explanations["pd"]["original"], explanation, self._aim, self._center)
+            d_output_input = t.gradient(loss, input).numpy()
+        return d_output_input
 
     def _calculate_gradient(self, data):
         # gradient of output w.r.t input

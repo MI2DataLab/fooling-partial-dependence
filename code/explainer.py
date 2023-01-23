@@ -138,29 +138,28 @@ class Explainer:
 
         return y
 
-    def pd_pop(self, X_pop, idv, grid):
+
+
+    def pd_tf(self, X, idv, grid):
         """
-        vectorized (whole population) pd calculation for 1 variable
+        TensorFlow implementation of pd calculation for 1 variable
         """
         grid_points = len(grid)
         # take grid_points of each observation in X
-        X_pop_long = np.repeat(X_pop, grid_points, axis=1)
+        X_long = tf.repeat(X, grid_points, axis=0)
         # take grid for each observation
-        grid_pop_long = np.tile(
-            grid.reshape((-1, 1)), (X_pop.shape[0], X_pop.shape[1], 1)
-        )
+        grid_long = tf.tile(tf.reshape(grid, [-1, 1]), [X.shape[0], 1])
+        grid_long = tf.cast(grid_long, X.dtype)
         # merge X and grid in long format
-        X_pop_long[:, :, [idv]] = grid_pop_long
+        indices = [[i, idv] for i in range(X_long.shape[0])]
+        X_long = tf.tensor_scatter_nd_update(X_long, indices, tf.reshape(grid_long, [-1]))
         # calculate ceteris paribus
-        y_pop_long = self.predict(
-            X_pop_long.reshape(
-                X_pop_long.shape[0] * X_pop_long.shape[1], X_pop_long.shape[2]
-            )
-        ).reshape((X_pop_long.shape[0], X_pop.shape[1], grid_points))
+        y_long = self.model(X_long)
         # calculate partial dependence
-        y = y_pop_long.mean(axis=1)
+        y = tf.reduce_mean(tf.reshape(y_long, [X.shape[0], grid_points]), axis=0)
 
         return y
+
 
     def ale(self, X, idv, grid):
         """
