@@ -297,14 +297,10 @@ class GradientAlgorithm(algorithm.Algorithm):
 
         new_row = [args.name, save_path, args.variable, args.size, args.seed, args.lr, args.iter, args.constrain]
         for name, explanation in zip(names, expls):
-            _loss = loss.loss(
-                original=explanation["original"],
-                changed=explanation["changed"],
-                aim=self._aim,
-                center=self._center,
-            )
 
-            output_str += f"{name} L2: {_loss}\n"
+            l2 = np.sqrt((explanation["original"] - explanation["changed"])**2).mean()
+
+            output_str += f"{name} L2: {l2}\n"
 
             l1 = np.abs(explanation["original"] - explanation["changed"]).mean()
             output_str += f"{name} L1: {l1}\n"
