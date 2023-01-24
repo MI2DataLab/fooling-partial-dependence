@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 import tqdm
 
-from . import algorithm     
+from . import algorithm
 from . import loss
 from . import utils
 
@@ -19,6 +19,8 @@ class GradientAlgorithm(algorithm.Algorithm):
         variable,
         constant=None,
         n_grid_points=21,
+        loss_function='mse',
+        X_poisoned=None,
         **kwargs
     ):
         super().__init__(
@@ -34,11 +36,18 @@ class GradientAlgorithm(algorithm.Algorithm):
             learning_rate=1e-2,
             optimizer=utils.AdamOptimizer()
         )
-        
+
         for k, v in kwargs.items():
             params[k] = v
 
         self.params = params
+        if loss_function == 'mse':
+            self.loss_function = tf.keras.losses.MeanSquaredError()
+        elif loss_function == 'bce':
+            self.loss_function = tf.keras.losses.BinaryCrossentropy()
+        else:
+            raise ValueError("Loss function not recognized.")
+        self.X_poisoned = X_poisoned
 
 
     def fool(
@@ -61,14 +70,14 @@ class GradientAlgorithm(algorithm.Algorithm):
         self._initialize()
         if method == "pd":
             self.result_explanation['changed'] = self.explainer.pd(
-                self._X_changed, 
-                self._idv, 
+                self._X_changed,
+                self._idv,
                 self.result_explanation['grid']
             )
         elif method == "ale":
             self.result_explanation['changed'] = self.explainer.ale(
-                self._X_changed, 
-                self._idv, 
+                self._X_changed,
+                self._idv,
                 self.result_explanation['grid']
             )
         self.append_losses(i=0)
@@ -79,14 +88,14 @@ class GradientAlgorithm(algorithm.Algorithm):
         for i in pbar:
             if method == "pd":
                 self.result_explanation['changed'] = self.explainer.pd(
-                    self._X_changed, 
-                    self._idv, 
+                    self._X_changed,
+                    self._idv,
                     self.result_explanation['grid']
                 )
             elif method == "ale":
                 self.result_explanation['changed'] = self.explainer.ale(
-                    self._X_changed, 
-                    self._idv, 
+                    self._X_changed,
+                    self._idv,
                     self.result_explanation['grid']
                 )
 
@@ -100,7 +109,7 @@ class GradientAlgorithm(algorithm.Algorithm):
             pbar.set_description("Iter: %s || Loss: %s" % (i, self.iter_losses['loss'][-1]))
             if utils.check_early_stopping(self.iter_losses, self.params['epsilon'], self.params['stop_iter']):
                 break
-        
+
         if method == "pd":
             self.result_explanation['changed'] = self.explainer.pd(
                 X=self._X_changed,
@@ -119,32 +128,35 @@ class GradientAlgorithm(algorithm.Algorithm):
             .rename(index={'0': 'original', '1': 'changed'})\
             .assign(dataset=pd.Series(['original', 'changed'])\
                             .repeat(self._n).reset_index(drop=True))
+        self.X_poisoned = self._X_changed
 
 
-    def fool_acc(self, max_iter=None, verbose=True, grid=None,random_state=None, method="ale++", reg_factor=100, X_changed=None):
+    def fool_acc(self, max_iter=None, verbose=True, grid=None,random_state=None, method="ale++", reg_factor=100):
         """
         Function finetuning model weights for better accuracy, but preserving current ALE plot
         """
+
         super().fool(
             grid=grid,
             random_state=random_state,
             method="ale++",
         )
-        self._X_changed = X_changed
 
         target = tf.convert_to_tensor(self.result_explanation['original'])
         y = tf.convert_to_tensor(self._y, dtype=tf.float32)
-        raw_loss, loss = self.calculate_alepp_loss(self._X, self._X_changed, y, reg_factor)
-        self.iter_losses['iter'].append(0)
-        self.iter_losses['raw_loss'] = [raw_loss]
-        self.iter_losses['loss'].append(loss)
+        poisoned_data = tf.convert_to_tensor(self.X_poisoned)
+        raw_loss, regularized_loss = self.calculate_alepp_loss(self._X, poisoned_data, y, reg_factor)
+        self.iter_losses['iter'] = [0]
+        self.iter_losses['raw_loss'].append(raw_loss)
+        self.iter_losses['regularized_loss'].append(regularized_loss)
 
         self.explainer.model.evaluate(self._X, self._y)
-        optimizer = tf.keras.optimizers.Adam()
+        optimizer = tf.keras.optimizers.Adam(learning_rate=self.params['learning_rate'])
+
         pbar = tqdm.tqdm(range(1, max_iter + 1), disable=not verbose)
         for i in pbar:
             data = tf.convert_to_tensor(self._X)
-            poisoned_data = tf.convert_to_tensor(self._X_changed)
+            poisoned_data = tf.convert_to_tensor(self.X_poisoned)
             labels = tf.convert_to_tensor(self._y, dtype=tf.float32)
 
             with tf.GradientTape() as t:
@@ -152,8 +164,8 @@ class GradientAlgorithm(algorithm.Algorithm):
                 t.watch(target)
                 t.watch(labels)
 
-                raw_loss, loss = self.calculate_alepp_loss(data, poisoned_data, labels, reg_factor)
-                gradient = t.gradient(loss, self.explainer.model.trainable_weights)
+                raw_loss, regularized_loss = self.calculate_alepp_loss(data, poisoned_data, labels, reg_factor)
+                gradient = t.gradient(regularized_loss, self.explainer.model.trainable_weights)
 
                 if isinstance(gradient, tf.IndexedSlices):
                     gradient = tf.convert_to_tensor(gradient)
@@ -161,19 +173,19 @@ class GradientAlgorithm(algorithm.Algorithm):
                 optimizer.apply_gradients(zip(gradient, self.explainer.model.trainable_weights))
                 self.iter_losses['iter'].append(i)
                 self.iter_losses['raw_loss'].append(raw_loss)
-                self.iter_losses['loss'].append(loss)
+                self.iter_losses['regularized_loss'].append(regularized_loss)
 
-            pbar.set_description(f"Iter: {i} || Loss: {self.iter_losses['loss'][-1]} || Raw loss: {self.iter_losses['raw_loss'][-1]}")
+            pbar.set_description(f"Iter: {i} || Loss: {self.iter_losses['regularized_loss'][-1]} || Raw loss: {self.iter_losses['raw_loss'][-1]}")
             if utils.check_early_stopping(self.iter_losses, self.params['epsilon'], self.params['stop_iter']):
                 break
 
-        self.result_explanation['original'] = self.explainer.ale(
+        self.result_explanation['original_after_fintetuning'] = self.explainer.ale(
             self._X,
             self._idv,
             self.result_explanation['grid']
         )
-        self.result_explanation['changed'] = self.explainer.ale(
-            self._X_changed,
+        self.result_explanation['poisoned_after_finetuning'] = self.explainer.ale(
+            self.X_poisoned,
             self._idv,
             self.result_explanation['grid']
         )
@@ -266,7 +278,7 @@ class GradientAlgorithm(algorithm.Algorithm):
             return tf.keras.losses.mean_squared_error(self.result_explanation['target'], result)
         else:
             assert False, "Not implemented"
-    
+
     def calculate_gradient(self, data, method="pd"):
         input = tf.convert_to_tensor(data)
         with tf.GradientTape() as t:
@@ -279,7 +291,7 @@ class GradientAlgorithm(algorithm.Algorithm):
             gradient = t.gradient(loss, input)
             if isinstance(gradient, tf.IndexedSlices):
                 gradient = tf.convert_to_tensor(gradient)
-        
+
         return gradient.numpy()
 
     def assign(tensor, slc, values):
@@ -310,12 +322,12 @@ class GradientAlgorithm(algorithm.Algorithm):
         _X_std[self._idv] = 0
         if self._idc is not None:
             for c in self._idc:
-                _X_std[c] = 0        
+                _X_std[c] = 0
         _theta = np.random.normal(loc=0, scale=_X_std, size=self._X.shape)
         self._X_changed = self._X + _theta
 
     #:# helper
-              
+
     def append_losses(self, i=0):
         _loss = loss.loss(
             original=self.result_explanation['target'] if self._aim else self.result_explanation['original'],
@@ -331,9 +343,8 @@ class GradientAlgorithm(algorithm.Algorithm):
 
     def calculate_alepp_loss(self, data, poisoned_data, y_orig, reg_factor):
         y_pred = self.explainer.model(data)
-        mse = tf.keras.losses.MeanSquaredError()
-        mse_loss = mse(y_pred, y_orig)
+        alepp_loss = self.loss_function(y_pred, y_orig)
         explanation = self.calculate_ale(data)
         poisoned_explanation = self.calculate_ale(poisoned_data)
         reg_loss = tf.keras.losses.mean_squared_error(explanation, poisoned_explanation)
-        return mse_loss, mse_loss + reg_factor*reg_loss
+        return alepp_loss, alepp_loss + reg_factor*reg_loss

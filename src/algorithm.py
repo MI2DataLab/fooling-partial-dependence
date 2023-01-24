@@ -32,7 +32,7 @@ class Algorithm:
         self.result_explanation = {'grid': None, 'original': None, 'changed': None}
         self.result_data = None
 
-        self.iter_losses = {'iter':[], 'loss':[]}
+        self.iter_losses = {'iter': [], 'loss': [], 'raw_loss': [], 'regularized_loss': []}
         self.iter_explanations = {}
 
 
@@ -70,8 +70,14 @@ class Algorithm:
                 idv=self._idv,
                 grid=self.result_explanation['grid']
             )
-
-        self.result_explanation['changed'] = np.zeros_like(self.result_explanation['grid'])
+        if self.X_poisoned is not None:
+            self.result_explanation['changed'] = self.explainer.ale(
+                X=self.X_poisoned,
+                idv=self._idv,
+                grid=self.result_explanation['grid']
+            )
+        else:
+            self.result_explanation['changed'] = np.zeros_like(self.result_explanation['grid'])
 
 
     def fool_aim(
@@ -139,19 +145,19 @@ class Algorithm:
                     sns.lineplot(
                         data=_df, 
                         linewidth=lw, 
-                        palette=sns.color_palette("Set1").as_hex()[0:2][::-1]
+                        palette=sns.color_palette("Set1").as_hex()[0:len(_df.columns)][::-1]
                     )
                 elif target is False:
                     sns.lineplot(
                         data=_df.drop('target', axis=1),
                         linewidth=lw, 
-                        palette=sns.color_palette("Set1").as_hex()[0:2][::-1]
+                        palette=sns.color_palette("Set1").as_hex()[0:len(_df.columns)][::-1]
                     )
                 else:
                     sns.lineplot(
                         data=_df, 
                         linewidth=lw, 
-                        palette=sns.color_palette("Set1").as_hex()[0:2][::-1] + ['grey']
+                        palette=sns.color_palette("Set1").as_hex()[0:(len(_df.columns)-1)][::-1] + ['grey']
                     )
             leg = plt.legend(fontsize=14, loc=legend_loc)
         else:
