@@ -66,6 +66,7 @@ class GradientAlgorithm(algorithm.Algorithm):
         self._center = not aim if center is None else center
         self._result_data = {}
 
+
         # for j, (explanation_name, result_explanation) in enumerate(
         #     zip(self.result_explanations.keys(), self.result_explanations.values())
         # ):
@@ -165,6 +166,7 @@ class GradientAlgorithm(algorithm.Algorithm):
             )
         )
 
+
     def fool_aim(
         self,
         target="auto",
@@ -193,8 +195,9 @@ class GradientAlgorithm(algorithm.Algorithm):
         with tf.GradientTape() as t:
             t.watch(input)
             explanation = self.explainer.pd_tf(X=input, idv=self._idv, grid=self.result_explanations["pd"]["grid"])
-            loss_ = loss.loss_tf(self.result_explanations["pd"]["original"], explanation, self._aim, self._center)
+            loss_ = loss.loss_tf(self.result_explanations["pd"]["target"], explanation, self._aim, self._center)
             d_output_input = t.gradient(loss_, input).numpy()
+            
         return d_output_input
 
     def _calculate_gradient(self, data):
