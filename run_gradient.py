@@ -1,9 +1,3 @@
-# ---------------------------------
-# example: heart / NN / variable
-# > python heart-gradient.py
-# ---------------------------------
-
-
 import tensorflow as tf
 from argparse import ArgumentParser, Namespace
 import os

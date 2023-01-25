@@ -189,11 +189,8 @@ class GradientAlgorithm(algorithm.Algorithm):
             explanation = self.explainer.pd_tf(X=input, idv=self._idv, grid=self.result_explanations["pd"]["grid"])
             loss_expl = loss.loss_tf(self.result_explanations["pd"]["target"], explanation, self._aim, self._center)
             loss_data = loss.loss_ks(self._X_original, input)
-            print("loss_expl", loss_expl)
-            print("loss_data", loss_data)
             loss_ = loss_expl + self.params["ks_weight"] * loss_data
-            print("loss_", loss_)
-            d_output_input = t.gradient(loss_, input).numpy()
+            d_output_input = t.gradient(loss_, input)
             
         return d_output_input
 
