@@ -101,13 +101,7 @@ class GradientAlgorithm(algorithm.Algorithm):
             result_explanation["changed"] = explanation_func(
                 self._X_changed, self._idv, result_explanation["grid"]
             )
-            d_loss = self._calculate_gradient_loss(
-                result_explanation, d_output_input_long
-            )
             loss_tf = self._calculate_gradient_tf(self._X_changed)
-            print(d_loss[0])
-            print(loss_tf[0])
-            # assert False
             step = self.params["optimizer"].calculate_step(loss_tf)
             self._X_changed -= self.params["learning_rate"] * step
 

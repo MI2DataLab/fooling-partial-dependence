@@ -128,9 +128,6 @@ class Algorithm:
         for explanation_name, result_explanation in zip(
             self.result_explanations.keys(), self.result_explanations.values()
         ):
-            print(explanation_name)
-            print(result_explanation["changed"])
-            # assert False
             if n == 1:
                 if categorical:
 
