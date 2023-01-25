@@ -44,6 +44,7 @@ class GradientAlgorithm(algorithm.Algorithm):
             stop_iter=10,
             learning_rate=learning_rate,
             optimizer=utils.AdamOptimizer(),
+            ks_weight = 0,
         )
 
         for k, v in kwargs.items():
@@ -95,9 +96,6 @@ class GradientAlgorithm(algorithm.Algorithm):
         pbar = tqdm.tqdm(range(1, max_iter + 1), disable=not verbose)
         for i in pbar:
             # gradient of output w.r.t input
-            d_output_input_long = self._calculate_gradient_long(
-                result_explanation, self._X_changed
-            )
             result_explanation["changed"] = explanation_func(
                 self._X_changed, self._idv, result_explanation["grid"]
             )
@@ -189,7 +187,12 @@ class GradientAlgorithm(algorithm.Algorithm):
         with tf.GradientTape() as t:
             t.watch(input)
             explanation = self.explainer.pd_tf(X=input, idv=self._idv, grid=self.result_explanations["pd"]["grid"])
-            loss_ = loss.loss_tf(self.result_explanations["pd"]["target"], explanation, self._aim, self._center)
+            loss_expl = loss.loss_tf(self.result_explanations["pd"]["target"], explanation, self._aim, self._center)
+            loss_data = loss.loss_ks(self._X_original, input)
+            print("loss_expl", loss_expl)
+            print("loss_data", loss_data)
+            loss_ = loss_expl + self.params["ks_weight"] * loss_data
+            print("loss_", loss_)
             d_output_input = t.gradient(loss_, input).numpy()
             
         return d_output_input
@@ -277,6 +280,10 @@ class GradientAlgorithm(algorithm.Algorithm):
             aim=self._aim,
             center=self._center,
         )
+
+        loss_data = loss.loss_ks(self._X_original, self._X_changed)
+        _loss += self.params["ks_weight"] * loss_data
+
         if i is not None:
             self.iter_losses["iter"].append(i)
         self.iter_losses["loss"][explanation_name].append(_loss)
@@ -298,6 +305,7 @@ class GradientAlgorithm(algorithm.Algorithm):
                 "lr",
                 "iter",
                 "constrain",
+                "ks_weight",
                 "ale_l2",
                 "ale_l1",
                 "ale_max_diff",
@@ -311,7 +319,7 @@ class GradientAlgorithm(algorithm.Algorithm):
         names = ("ALE", "PD")
         expls = [self.result_explanations["ale"], self.result_explanations["pd"]]
 
-        new_row = [args.name, save_path, args.variable, args.size, args.seed, args.lr, args.iter, args.constrain]
+        new_row = [args.name, save_path, args.variable, args.size, args.seed, args.lr, args.iter, args.constrain, args.ks_weight]
         for name, explanation in zip(names, expls):
 
             l2 = np.sqrt((explanation["original"] - explanation["changed"])**2).mean()

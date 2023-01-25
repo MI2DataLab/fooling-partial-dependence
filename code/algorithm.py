@@ -3,6 +3,7 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
+import tensorflow as tf
 
 
 class Algorithm:
@@ -19,7 +20,8 @@ class Algorithm:
         self._variable = variable
         self._n_grid_points = n_grid_points
 
-        self._X_original = explainer.original_data.values
+        self._X_original = tf.convert_to_tensor(explainer.original_data.values)
+        print("SHAPE", self._X_original.shape)
         self._X = explainer.data.values
         self._n, self._p = self._X.shape
         self._idv = explainer.data.columns.get_loc(variable)
@@ -41,6 +43,8 @@ class Algorithm:
                 "original": None,
                 "changed": None,
             }
+
+# data shape: (nsamples, nfeatures)
 
         self.iter_losses["loss"]["pd"] = []
         self.iter_losses["loss"]["pd_tf"] = []

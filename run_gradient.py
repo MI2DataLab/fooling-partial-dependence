@@ -42,6 +42,11 @@ def arguments() -> Namespace:
     parser.add_argument(
         "--size", default=128, type=int, help="number of neurons in layers"
     )
+
+    parser.add_argument(
+        "--ks-weight", default=0, type=float, help="weight of Kolmogorov-Smirnoff distance in loss"
+    )
+
     parser.add_argument(
         "--name", default="heart", type=str, help="dataset name"
     )
@@ -114,7 +119,7 @@ if __name__ == "__main__":
         learning_rate=args.lr,
         # explanation_names=["pd", "ale", "ale_dalex", "pd_tf"],
         explanation_names=["pd", "ale", "pd_tf"],
-
+        ks_weight=args.ks_weight,
     )
 
     if args.strategy == "target":
@@ -122,7 +127,7 @@ if __name__ == "__main__":
     else:
         alg.fool(max_iter=args.iter, random_state=args.seed)
 
-    BASE_DIR = f"results_test_tf/{args.name}/{args.variable}_{args.size}_{args.seed}_gradient_{args.lr}_{args.iter}"
+    BASE_DIR = f"results_test_ks/{args.name}/{args.variable}_{args.size}_{args.seed}_gradient_{args.lr}_{args.iter}_{args.ks_weight}"
     if args.constrain:
         BASE_DIR += "_constrained"
     os.makedirs(BASE_DIR, exist_ok=True)
