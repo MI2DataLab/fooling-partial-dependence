@@ -38,12 +38,13 @@ def arguments() -> Namespace:
     )
 
     parser.add_argument(
-        "--ks-weight", default=0, type=float, help="weight of Kolmogorov-Smirnoff distance in loss"
+        "--ks-weight",
+        default=0,
+        type=float,
+        help="weight of Kolmogorov-Smirnoff distance in loss",
     )
 
-    parser.add_argument(
-        "--name", default="heart", type=str, help="dataset name"
-    )
+    parser.add_argument("--name", default="heart", type=str, help="dataset name")
     parser.add_argument(
         "--constrain",
         default=False,
@@ -60,6 +61,7 @@ def arguments() -> Namespace:
     args = parser.parse_args()
     return args
 
+
 def get_dataset(name):
     # this is a series of elifs because my Python is too old for match-case
     if name == "heart":
@@ -74,6 +76,21 @@ def get_dataset(name):
         y = 1 * (x1 * x2 * x3 > 0)
         X = pd.DataFrame({"x1": x1, "x2": x2, "x3": x3})
         CONSTANT = []
+
+    elif name == "bike-sharing":
+        df = pd.read_csv("data/bike-sharing-day.csv")
+        variables_to_drop = [
+            "instant",
+            "dteday",
+            "season",
+            "weekday",
+            "mnth",
+        ]
+        df = df.drop(variables_to_drop, axis=1)
+        CONSTANT = ["yr", "workingday", "weathersit"]
+        target_fields = ["cnt", "registered", "casual"]
+        X = df.drop(target_fields, axis=1)
+        y = df.cnt.values
 
     else:
         raise NotImplementedError("Dataset name not found")
