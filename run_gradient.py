@@ -61,7 +61,7 @@ def get_dataset(name):
         X = pd.DataFrame({"x1": x1, "x2": x2, "x3": x3})
         CONSTANT = []
 
-    elif name == "bike-sharing":
+    elif name == "bike-sharing" or name == "bike":
         df = pd.read_csv("data/bike-sharing-day.csv").dropna()
         variables_to_drop = [
             "instant",
@@ -71,10 +71,11 @@ def get_dataset(name):
             "mnth",
         ]
         df = df.drop(variables_to_drop, axis=1)
-        CONSTANT = ["yr", "workingday", "weathersit"]
+        CONSTANT = ["yr", "workingday", "holiday", "weathersit"]
         target_fields = ["cnt", "registered", "casual"]
         X = df.drop(target_fields, axis=1)
-        y = df.cnt.values
+        # were there more rentals than on average?
+        y = (df.cnt.values > 4500)
 
     elif name == "adult":
         df = pd.read_csv("data/adult.csv").dropna()
