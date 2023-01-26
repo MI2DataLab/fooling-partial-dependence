@@ -21,7 +21,6 @@ class Algorithm:
         self._n_grid_points = n_grid_points
 
         self._X_original = tf.convert_to_tensor(explainer.original_data.values)
-        print("SHAPE", self._X_original.shape)
         self._X = explainer.data.values
         self._n, self._p = self._X.shape
         self._idv = explainer.data.columns.get_loc(variable)
