@@ -44,7 +44,7 @@ class GradientAlgorithm(algorithm.Algorithm):
             stop_iter=10,
             learning_rate=learning_rate,
             optimizer=utils.AdamOptimizer(),
-            ks_weight = 0,
+            dist_weight = 0,
         )
 
         for k, v in kwargs.items():
@@ -188,8 +188,8 @@ class GradientAlgorithm(algorithm.Algorithm):
             t.watch(input)
             explanation = self.explainer.pd_tf(X=input, idv=self._idv, grid=self.result_explanations["pd"]["grid"])
             loss_expl = loss.loss_tf(self.result_explanations["pd"]["target"], explanation, self._aim, self._center)
-            loss_data = loss.loss_ks(self._X_original, input)
-            loss_ = loss_expl + self.params["ks_weight"] * loss_data
+            loss_data = loss.loss_dist(self._X_original, input)
+            loss_ = loss_expl + self.params["dist_weight"] * loss_data
             d_output_input = t.gradient(loss_, input)
             
         return d_output_input
@@ -278,8 +278,8 @@ class GradientAlgorithm(algorithm.Algorithm):
             center=self._center,
         )
 
-        loss_data = loss.loss_ks(self._X_original, self._X_changed)
-        _loss += self.params["ks_weight"] * loss_data
+        loss_data = loss.loss_dist(self._X_original, self._X_changed)
+        _loss += self.params["dist_weight"] * loss_data
 
         if i is not None:
             self.iter_losses["iter"].append(i)
@@ -302,7 +302,7 @@ class GradientAlgorithm(algorithm.Algorithm):
                 "lr",
                 "iter",
                 "constrain",
-                "ks_weight",
+                "dist_weight",
                 "ale_l2",
                 "ale_l1",
                 "ale_max_diff",
@@ -316,7 +316,7 @@ class GradientAlgorithm(algorithm.Algorithm):
         names = ("ALE", "PD")
         expls = [self.result_explanations["ale"], self.result_explanations["pd"]]
 
-        new_row = [args.name, save_path, args.variable, args.size, args.seed, args.lr, args.iter, args.constrain, args.ks_weight]
+        new_row = [args.name, save_path, args.variable, args.size, args.seed, args.lr, args.iter, args.constrain, args.dist_weight]
         for name, explanation in zip(names, expls):
 
             l2 = np.sqrt((explanation["original"] - explanation["changed"])**2).mean()
