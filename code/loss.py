@@ -20,7 +20,7 @@ def loss_tf(original, changed, aim=False, center=True):
     else:
         if center:
             return -0.5 * tf.reduce_mean(
-                ((original - original.mean()) - (changed - tf.reduce_mean(changed))) ** 2
+                ((original - tf.reduce_mean(original)) - (changed - tf.reduce_mean(changed))) ** 2
             )
         else:
             return -0.5 * tf.reduce_mean((original - changed) ** 2)
@@ -46,7 +46,7 @@ def loss_pop(original, changed, aim=False, center=True):
             return -((original_long - changed) ** 2).mean(axis=1)
 
             
-def loss_ks(X_original, X_changed):
+def loss_dist(X_original, X_changed):
     x1 = tf.sort(X_original, axis=0)
     x1 = tf.cast(x1, tf.float32)
     x2 = tf.sort(X_changed, axis=0)

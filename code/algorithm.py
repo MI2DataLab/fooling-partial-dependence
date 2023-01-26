@@ -185,7 +185,8 @@ class Algorithm:
             plt.ylabel("prediction", fontsize=16)
             if savefig:
                 plt.savefig(f"{savefig}_{explanation_name}.png")
-            plt.show()
+            # plt.show()
+            plt.clf()
 
     def plot_other_explanation(
         self,
@@ -275,6 +276,7 @@ class Algorithm:
             if savefig:
                 plt.savefig(f"{savefig}_{explanation_name}_other.png")
             plt.show()
+            plt.clf()
 
     def plot_data(self, i=0, constant=True, height=2, savefig=None):
         # for explanation_name in self.result_explanations.keys():
@@ -307,7 +309,8 @@ class Algorithm:
                     os.path.join(savefig, f"data_{explanation_name}.png"),
                     bbox_inches="tight",
                 )
-            plt.show()
+            # plt.show()
+            plt.clf()
 
     def plot_losses(self, lw=3, figsize=(9, 6), savefig=None):
         # for explanation_name in self.iter_losses["loss"].keys():
@@ -324,4 +327,5 @@ class Algorithm:
             plt.ylabel("loss", fontsize=16)
             if savefig:
                 plt.savefig(f"{savefig}_{explanation_name}.png")
-            plt.show()
+            # plt.show()
+            plt.clf()
