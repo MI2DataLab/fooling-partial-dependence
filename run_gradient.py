@@ -137,7 +137,7 @@ if __name__ == "__main__":
     else:
         alg.fool(max_iter=args.iter, random_state=args.seed)
 
-    BASE_DIR = f"results_test_ks/{args.name}/{args.variable}_{args.size}_{args.seed}_gradient_{args.lr}_{args.iter}_{args.dist_weight}"
+    BASE_DIR = f"results_final/{args.name}/{args.variable}_{args.size}_{args.seed}_gradient_{args.lr}_{args.iter}_{args.dist_weight}"
     if args.constrain:
         BASE_DIR += "_constrained"
     os.makedirs(BASE_DIR, exist_ok=True)

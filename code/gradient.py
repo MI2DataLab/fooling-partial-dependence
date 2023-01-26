@@ -290,7 +290,7 @@ class GradientAlgorithm(algorithm.Algorithm):
             explanation_name
         ]["changed"]
 
-    def get_metrics(self, args, save_path=None, all_results_csv="results/all_rows.csv"):
+    def get_metrics(self, args, save_path=None, all_results_csv="results_final/all_rows.csv"):
         output_str = ""
         df = pd.DataFrame(
             columns=[
