@@ -55,11 +55,8 @@ def get_dataset(name):
         CONSTANT = ["sex", "cp", "fbs", "restecg", "exang", "slope", "ca", "thal"]
 
     elif name == "xor":
-        x1 = np.random.normal(size=args.n)
-        x2 = np.random.normal(size=args.n)
-        x3 = np.random.normal(size=args.n)
-        y = 1 * (x1 * x2 * x3 > 0)
-        X = pd.DataFrame({"x1": x1, "x2": x2, "x3": x3})
+        df = pd.read_csv("data/xor.csv")
+        X, y = df.drop("y", axis=1), df.y.values
         CONSTANT = []
 
     elif name == "bike-sharing" or name == "bike":
@@ -79,36 +76,8 @@ def get_dataset(name):
         y = (df.cnt.values > 4500)
 
     elif name == "adult":
-        df = pd.read_csv("data/adult.csv").dropna()
-        x = df.drop(
-            columns=[
-                "income",
-                "occupation",
-                "relationship",
-            ]
-        )
-        categorical_variables = [
-            "native-country",
-            "workclass",
-            "education",
-            "marital-status",
-            "race",
-            "gender",
-        ]
-
-        for variable_name in categorical_variables:
-            unique_values = df[variable_name].unique()
-            for i, v in enumerate(unique_values):
-                x.loc[x[variable_name] == v, variable_name] = i
-
-        df.loc[df["income"] == ">50K", "income"] = 1
-        df.loc[df["income"] == "<=50K", "income"] = 0
-        Y = df["income"].astype("float32")
-        sss = StratifiedShuffleSplit(n_splits=5, train_size=0.02, random_state=0)
-        for train_index, test_index in sss.split(x, Y):
-            print(train_index)
-            X, _X_test = x.iloc[train_index, :].astype("float32"), None
-            y, _y_test = Y[train_index], None
+        df = pd.read_csv("data/adult_sampled.csv")
+        X, y = df.drop("y", axis=1), df.y.values
         CONSTANT = ["capital-loss", "capital-gain", "race", "gender"]
 
     else:
