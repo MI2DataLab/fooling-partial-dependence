@@ -46,7 +46,7 @@ def loss_pop(original, changed, aim=False, center=True):
             return -((original_long - changed) ** 2).mean(axis=1)
 
             
-def loss_dist(X_original, X_changed):
+def loss_ks(X_original, X_changed):
     x1 = tf.sort(X_original, axis=0)
     x2 = tf.sort(X_changed, axis=0)
     ret = tf.reduce_mean((x1 - x2) ** 2)
