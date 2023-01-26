@@ -4,6 +4,7 @@ import os
 import code
 import numpy as np
 import pandas as pd
+from sklearn.model_selection import StratifiedShuffleSplit
 
 
 def arguments() -> Namespace:
@@ -78,25 +79,36 @@ def get_dataset(name):
 
     elif name == "adult":
         df = pd.read_csv("data/adult.csv").dropna()
-        X = df.drop(columns=["income", "occupation", "relationship",])
-        X = pd.get_dummies(
-            X,
+        x = df.drop(
             columns=[
-                "workclass",
-                "education",
-                "marital-status",
-                # "occupation",
-                # "relationship",
-                "race",
-                "gender",
-                "native-country",
-            ],
-            drop_first=True,
-        ).astype("float32")
+                "income",
+                "occupation",
+                "relationship",
+            ]
+        )
+        categorical_variables = [
+            "native-country",
+            "workclass",
+            "education",
+            "marital-status",
+            "race",
+            "gender",
+        ]
+
+        for variable_name in categorical_variables:
+            unique_values = df[variable_name].unique()
+            for i, v in enumerate(unique_values):
+                x.loc[x[variable_name] == v, variable_name] = i
+
         df.loc[df["income"] == ">50K", "income"] = 1
         df.loc[df["income"] == "<=50K", "income"] = 0
-        y = df["income"].astype("float32")
-        CONSTANT = ["capital-loss", "capital-gain"]
+        Y = df["income"].astype("float32")
+        sss = StratifiedShuffleSplit(n_splits=5, train_size=0.02, random_state=0)
+        for train_index, test_index in sss.split(x, Y):
+            print(train_index)
+            X, _X_test = x.iloc[train_index, :].astype("float32"), None
+            y, _y_test = Y[train_index], None
+        CONSTANT = ["capital-loss", "capital-gain", "race", "gender"]
 
     else:
         raise NotImplementedError("Dataset name not found")
