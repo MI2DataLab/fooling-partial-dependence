@@ -5,22 +5,6 @@ import code
 import numpy as np
 import pandas as pd
 
-VARIABLES = {
-    "age",
-    "sex",
-    "cp",
-    "trestbps",
-    "chol",
-    "fbs",
-    "restecg",
-    "thalach",
-    "exang",
-    "oldpeak",
-    "slope",
-    "ca",
-    "thal",
-}
-
 
 def arguments() -> Namespace:
     parser = ArgumentParser(description="main")
@@ -78,7 +62,7 @@ def get_dataset(name):
         CONSTANT = []
 
     elif name == "bike-sharing":
-        df = pd.read_csv("data/bike-sharing-day.csv")
+        df = pd.read_csv("data/bike-sharing-day.csv").dropna()
         variables_to_drop = [
             "instant",
             "dteday",
@@ -91,6 +75,28 @@ def get_dataset(name):
         target_fields = ["cnt", "registered", "casual"]
         X = df.drop(target_fields, axis=1)
         y = df.cnt.values
+
+    elif name == "adult":
+        df = pd.read_csv("data/adult.csv").dropna()
+        X = df.drop(columns=["income", "occupation", "relationship",])
+        X = pd.get_dummies(
+            X,
+            columns=[
+                "workclass",
+                "education",
+                "marital-status",
+                # "occupation",
+                # "relationship",
+                "race",
+                "gender",
+                "native-country",
+            ],
+            drop_first=True,
+        ).astype("float32")
+        df.loc[df["income"] == ">50K", "income"] = 1
+        df.loc[df["income"] == "<=50K", "income"] = 0
+        y = df["income"].astype("float32")
+        CONSTANT = ["capital-loss", "capital-gain"]
 
     else:
         raise NotImplementedError("Dataset name not found")
