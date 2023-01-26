@@ -80,6 +80,28 @@ def get_dataset(name):
         X, y = df.drop("y", axis=1), df.y.values
         CONSTANT = ["capital-loss", "capital-gain", "race", "gender"]
 
+    elif name == "titanic":
+        df = pd.read_csv("data/titanic/train.csv")
+        variables_to_drop = [
+            "PassengerId",
+            "Name",
+            "Cabin",
+            "Ticket"
+        ]
+        CONSTANT = ["Sex", "Embarked"]
+        target_fields = ["Survived"]
+        df = df.drop(variables_to_drop, axis=1)
+        df = df.dropna()
+        categoricals = ["Sex", "Embarked"]
+        for c in categoricals:
+            df[c] = pd.Categorical(df[c])
+            df[c] = df[c].cat.codes
+
+        X = df.drop(target_fields, axis=1)
+        y = df.Survived.values
+
+
+
     else:
         raise NotImplementedError("Dataset name not found")
 
