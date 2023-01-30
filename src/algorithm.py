@@ -32,7 +32,7 @@ class Algorithm:
         self.result_explanation = {'grid': None, 'original': None, 'changed': None}
         self.result_data = None
 
-        self.iter_losses = {'iter':[], 'loss':[]}
+        self.iter_losses = {'iter': [], 'loss': [], 'raw_loss': [], 'regularized_loss': []}
         self.iter_explanations = {}
 
 
@@ -70,8 +70,14 @@ class Algorithm:
                 idv=self._idv,
                 grid=self.result_explanation['grid']
             )
-
-        self.result_explanation['changed'] = np.zeros_like(self.result_explanation['grid'])
+        if self.X_poisoned is not None:
+            self.result_explanation['changed'] = self.explainer.ale(
+                X=self.X_poisoned,
+                idv=self._idv,
+                grid=self.result_explanation['grid']
+            )
+        else:
+            self.result_explanation['changed'] = np.zeros_like(self.result_explanation['grid'])
 
 
     def fool_aim(
@@ -90,7 +96,10 @@ class Algorithm:
         )
         
         if target == "auto": # target = -(x - mean(x)) + mean(x)
-            self.result_explanation['target'] = np.mean(self.result_explanation['original']) -\
+            if method == "ale":
+                self.result_explanation['target'] = -self.result_explanation['original']
+            else:
+                self.result_explanation['target'] = np.mean(self.result_explanation['original']) -\
                  (self.result_explanation['original'] - np.mean(self.result_explanation['original']))
         elif isinstance(target, np.ndarray):
             self.result_explanation['target'] = target
@@ -110,7 +119,8 @@ class Algorithm:
             legend_loc=0,
             figsize=(9, 6), # 7.2, 4.8
             savefig=None,
-            method="pd"
+            method="pd",
+            X_changed=None,
         ):
         plt.rcParams["legend.handlelength"] = 2
         plt.rcParams["figure.figsize"] = figsize
@@ -135,19 +145,19 @@ class Algorithm:
                     sns.lineplot(
                         data=_df, 
                         linewidth=lw, 
-                        palette=sns.color_palette("Set1").as_hex()[0:2][::-1]
+                        palette=sns.color_palette("Set1").as_hex()[0:len(_df.columns)][::-1]
                     )
                 elif target is False:
                     sns.lineplot(
                         data=_df.drop('target', axis=1),
                         linewidth=lw, 
-                        palette=sns.color_palette("Set1").as_hex()[0:2][::-1]
+                        palette=sns.color_palette("Set1").as_hex()[0:len(_df.columns)][::-1]
                     )
                 else:
                     sns.lineplot(
                         data=_df, 
                         linewidth=lw, 
-                        palette=sns.color_palette("Set1").as_hex()[0:2][::-1] + ['grey']
+                        palette=sns.color_palette("Set1").as_hex()[0:(len(_df.columns)-1)][::-1] + ['grey']
                     )
             leg = plt.legend(fontsize=14, loc=legend_loc)
         else:
@@ -222,11 +232,11 @@ class Algorithm:
             ax.savefig(savefig, bbox_inches='tight')
         plt.show()
 
-    def plot_losses(self, lw=3, figsize=(9, 6), savefig=None):
+    def plot_losses(self, lw=3, figsize=(9, 6), savefig=None, loss='loss'):
         plt.rcParams["figure.figsize"] = figsize
         plt.plot(
             self.iter_losses['iter'], 
-            self.iter_losses['loss'], 
+            self.iter_losses[loss], 
             color='#000000', 
             lw=lw
         )

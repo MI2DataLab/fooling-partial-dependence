@@ -5,10 +5,12 @@
 
 import os
 import tensorflow as tf
+
 tf.experimental.numpy.experimental_enable_numpy_behavior(
     prefer_float32=False
 )
 import argparse
+
 parser = argparse.ArgumentParser(description='main')
 parser.add_argument('--variable', default="hr", type=str, help='variable')
 parser.add_argument('--strategy', default="target", type=str, help='strategy type')
@@ -18,19 +20,19 @@ parser.add_argument('--method', default="ale", type=str, help='method: pd/ale')
 parser.add_argument('--load_model', default=None, type=str, help='name of previously trained model')
 parser.add_argument('--save_model_as', default=None, type=str, help='name of model to save')
 parser.add_argument('--models_path', default='models', type=str, help='dirname of models')
-parser.add_argument('--mse_regularization_factor', default=100, type=int, help='Regularization factor of MSE')
+parser.add_argument('--mse_regularization_factor', default=100, type=float, help='Regularization factor of MSE')
 parser.add_argument('--alepp_loss_funcion', default="bce", type=str, help='loss function bce/mse')
 args = parser.parse_args()
 
 VARIABLE = args.variable
 VARIABLES_TO_DROP = ['instant', 'dteday', 'season', 'casual', 'registered', 'cnt']
 
-
 tf.get_logger().setLevel('ERROR')
 tf.random.set_seed(args.seed)
 
 import src
 import numpy as np
+
 np.random.seed(args.seed)
 import pandas as pd
 
@@ -38,7 +40,7 @@ df = pd.read_csv("data/hour.csv")
 X, y = df.drop(VARIABLES_TO_DROP, axis=1), df.cnt.values
 
 if args.load_model:
-    model = tf.keras.models.load_model( args.models_path + "/" + args.load_model)
+    model = tf.keras.models.load_model(args.models_path + "/" + args.load_model)
 else:
     normalizer = tf.keras.layers.experimental.preprocessing.Normalization()
     normalizer.adapt(X)
@@ -80,25 +82,23 @@ if args.strategy == "target":
 else:
     alg.fool(max_iter=args.iter, random_state=args.seed, method=args.method)
 
-
-print( alg.explainer.model(X[:20]) )
 alg.plot_losses()
 title = "Partial Dependence" if args.method == "pd" else "Accumulated Local Effects"
 alg.plot_explanation(method=args.method, title=title)
-alg.plot_data(constant=False)
+# alg.plot_data(constant=False)
 
-#----------------------- ale++ --------------------------
-
+# ----------------------- ale++ --------------------------
 X_changed = pd.DataFrame(data=alg._X_changed, columns=X.columns)
-explainer_alepp = src.Explainer(alg.explainer.model, X_changed, y)
+alepp_explainer = src.Explainer(alg.explainer.model, X, y)
 
 alg_alepp = src.GradientAlgorithm(
-    explainer_alepp,
+    alepp_explainer,
     variable=VARIABLE,
     constant=CONSTANT,
-    learning_rate=0.5
+    learning_rate=0.001,
+    X_poisoned=alg._X_changed
 )
 
 alg_alepp.fool_acc(max_iter=args.iter, reg_factor=args.mse_regularization_factor)
-alg_alepp.plot_losses()
+alg_alepp.plot_losses(loss='raw_loss')
 alg_alepp.plot_explanation(method='ale++', title="ale++")
