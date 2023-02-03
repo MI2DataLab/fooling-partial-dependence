@@ -217,6 +217,13 @@ class GradientAlgorithm(algorithm.Algorithm):
             method=method,
         )
 
+    def compute_table_entry(self):
+        honest = self.result_explanation['original']
+        poisoned = self.result_explanation['changed']
+        honest_after = self.result_explanation['original_after_fintetuning']
+        poisoned_after = self.result_explanation['poisoned_after_finetuning']
+
+        return [abs((honest - poisoned).mean()), abs((honest_after - poisoned_after).mean())]
 
     #:# inside
 

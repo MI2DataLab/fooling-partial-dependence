@@ -102,3 +102,5 @@ alg_alepp = src.GradientAlgorithm(
 alg_alepp.fool_acc(max_iter=args.iter, reg_factor=args.mse_regularization_factor)
 alg_alepp.plot_losses(loss='raw_loss')
 alg_alepp.plot_explanation(method='ale++', title="ale++")
+
+print(alg_alepp.compute_table_entry())
