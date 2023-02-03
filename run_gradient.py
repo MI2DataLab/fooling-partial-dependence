@@ -77,7 +77,7 @@ def get_dataset(name):
 
     elif name == "adult":
         df = pd.read_csv("data/adult_sampled.csv")
-        X, y = df.drop("y", axis=1), df.y.values
+        X, y = df.drop(["y", "Unnamed: 0"], axis=1), df.y.values
         CONSTANT = ["capital-loss", "capital-gain", "race", "gender"]
 
     elif name == "titanic":
