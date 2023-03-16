@@ -2,15 +2,15 @@
 
 This repository is a supplement to the paper:
 
-Hubert Baniecki, Wojciech Kretowicz, Przemysław Biecek. [**Fooling Partial Dependence via Data Poisoning**](https://arxiv.org/abs/2105.12837). *European Conference on Machine Learning and Principles and Practice of Knowledge Discovery in Databases (ECML PKDD)*. 2022.
+Hubert Baniecki, Wojciech Kretowicz, Przemysław Biecek. [**Fooling Partial Dependence via Data Poisoning**](https://doi.org/10.1007/978-3-031-26409-2_8). *European Conference on Machine Learning and Principles and Practice of Knowledge Discovery in Databases (ECML PKDD)*, 2022.
 
 > Many methods have been developed to understand complex predictive models and high expectations are placed on post-hoc model explainability. It turns out that such explanations are not robust nor trustworthy, and they can be fooled. This paper presents techniques for attacking Partial Dependence (plots, profiles, PDP), which are among the most popular methods of explaining any predictive model trained on tabular data. We showcase that PD can be manipulated in an adversarial manner, which is alarming, especially in financial or medical applications where auditability became a must-have trait supporting black-box machine learning. The fooling is performed via poisoning the data to bend and shift explanations in the desired direction using genetic and gradient algorithms. We believe this to be the first work using a genetic algorithm for manipulating explanations, which is transferable as it generalizes both ways: in a model-agnostic and an explanation-agnostic manner.
 
 <p align="center">
-  <a href="https://arxiv.org/pdf/2105.12837.pdf">
+  <a href="https://doi.org/10.1007/978-3-031-26409-2_8">
     <img src="figures/fig1.png">
   </a>
-  <a href="https://arxiv.org/pdf/2105.12837.pdf">
+  <a href="https://doi.org/10.1007/978-3-031-26409-2_8">
     <img src="figures/fig4.png">
   </a>
 </p>
@@ -48,7 +48,7 @@ python heart-genetic.py --variable sex
 ```
 
 <p align="center">
-  <a href="https://arxiv.org/pdf/2105.12837.pdf">
+  <a href="https://doi.org/10.1007/978-3-031-26409-2_8">
     <img src="figures/fig5.png">
   </a>
 </p>
